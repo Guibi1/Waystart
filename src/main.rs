@@ -1,0 +1,56 @@
+use gpui::*;
+
+mod dapps;
+
+
+struct HelloWorld {
+    dapps: Vec<dapps::DappEntry>,
+}
+
+impl Render for HelloWorld {
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .size_full( )
+            .bg(rgb(0x2e7d32))
+            .justify_center()
+            .items_center()
+            .shadow_lg()
+            .border_3()
+            .border_color(rgb(0x0000ff))
+            .text_xl()
+            .text_color(rgb(0xffffff))
+            .children(self.dapps.iter().filter_map(|dapp| dapp.icon.clone().map(|i| {(i, dapp)})).map(|(icon, dapp)|
+                div().flex().size_full()
+                    .justify_start()
+                    .items_center()
+                    .child(img(ImageSource::File(icon.into()))
+                        .size_full()
+                        .object_fit(gpui::ObjectFit::Contain)
+                        .id("gif"),
+                    )
+                    .child(dapp.name.clone()))
+            )
+    }
+}
+
+fn main() {
+    let dapps = dapps::print_dapps();
+
+    App::new().run(|cx: &mut AppContext| {
+        let bounds = Bounds::centered(None, size(px(300.0), px(300.0)), cx);
+        cx.open_window(
+            WindowOptions {
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
+                ..Default::default()
+            },
+            |cx| {
+                cx.new_view(|_cx| HelloWorld {
+                    dapps,
+                })
+            },
+        )
+        .unwrap();
+    });
+}

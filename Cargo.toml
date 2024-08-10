@@ -1,0 +1,9 @@
+[package]
+name = "waystart"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+freedesktop-desktop-entry = "0.7.0"
+freedesktop-icons = "0.2.6"
+gpui = { git = "https://github.com/zed-industries/zed" }
