@@ -62,11 +62,11 @@ pub struct TextInput {
 }
 
 impl TextInput {
-    pub fn new(focus_handle: FocusHandle, placeholder: Option<impl Into<SharedString>>) -> Self {
+    pub fn new(focus_handle: FocusHandle) -> Self {
         Self {
             focus_handle,
             content: SharedString::default(),
-            placeholder: placeholder.map(|p| p.into()).unwrap_or_default(),
+            placeholder: SharedString::default(),
             selected_range: 0..0,
             selection_reversed: false,
             marked_range: None,
@@ -76,7 +76,12 @@ impl TextInput {
         }
     }
 
-    pub fn content(&self) -> &SharedString {
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    pub fn value(&self) -> &SharedString {
         &self.content
     }
 

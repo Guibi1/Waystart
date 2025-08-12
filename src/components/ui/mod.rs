@@ -6,12 +6,12 @@ pub mod palette;
 pub mod separator;
 pub mod shortcut;
 
-pub use input::*;
-pub use palette::*;
-pub use separator::separator;
-pub use shortcut::*;
+pub use input::TextInput;
+pub use palette::PALETTE;
+pub use separator::Separator;
+pub use shortcut::Shortcut;
 
-pub fn init(cx: &mut App) {
+pub(super) fn init(cx: &mut App) {
     input::init(cx);
     dropdown::init(cx);
 }

@@ -1,10 +1,11 @@
 use gpui::{
-    div, Context, Corner, InteractiveElement, IntoElement, ParentElement, Render, Styled, Window,
+    div, App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window,
 };
 
 use crate::components::ui::dropdown::{Dropdown, DropdownContent};
 use crate::components::ui::palette::PALETTE;
 
+#[derive(IntoElement)]
 pub struct PowerOptions {}
 
 impl PowerOptions {
@@ -13,12 +14,8 @@ impl PowerOptions {
     }
 }
 
-impl Render for PowerOptions {
-    fn render(
-        &mut self,
-        _window: &mut Window,
-        _cx: &mut Context<PowerOptions>,
-    ) -> impl IntoElement {
+impl RenderOnce for PowerOptions {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         Dropdown::new("power-options")
             .anchor(Corner::TopRight)
             .trigger(

@@ -12,7 +12,7 @@ use gpui::{AppContext, SharedString, StatefulInteractiveElement};
 
 use crate::components::ui::PALETTE;
 
-actions!(ui, [SelectPrev, SelectNext, Confirm, Cancel]);
+actions!(dropdown, [SelectPrev, SelectNext, Confirm, Cancel]);
 const CONTEXT: &str = "Dropdown";
 
 pub(super) fn init(cx: &mut App) {
@@ -114,8 +114,7 @@ impl Render for DropdownContent {
                 this.style().refine(&self.style);
                 this
             })
-            .on_action(cx.listener(|this, _: &SelectPrev, window, cx| {
-                window.focus_prev();
+            .on_action(cx.listener(|this, _: &SelectPrev, _, cx| {
                 this.selected = if this.selected == 0 {
                     this.items.len().saturating_sub(1)
                 } else {
@@ -123,9 +122,12 @@ impl Render for DropdownContent {
                 };
                 cx.notify();
             }))
-            .on_action(cx.listener(|this, _: &SelectNext, window, cx| {
-                window.focus_next();
-                this.selected = (this.selected + 1).min(this.items.len().saturating_sub(1));
+            .on_action(cx.listener(|this, _: &SelectNext, _, cx| {
+                this.selected = if this.selected == this.items.len().saturating_sub(1) {
+                    0
+                } else {
+                    this.selected + 1
+                };
                 cx.notify();
             }))
             .on_action(cx.listener(|this, _: &Confirm, window, cx| {

@@ -2,13 +2,15 @@ use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, S
 
 use crate::components::ui::PALETTE;
 
-pub fn shortcut(text: impl Into<SharedString>) -> Shortcut {
-    Shortcut { text: text.into() }
-}
-
 #[derive(IntoElement)]
 pub struct Shortcut {
     text: SharedString,
+}
+
+impl Shortcut {
+    pub fn new(text: impl Into<SharedString>) -> Shortcut {
+        Shortcut { text: text.into() }
+    }
 }
 
 impl RenderOnce for Shortcut {
