@@ -21,8 +21,8 @@ impl RenderOnce for Shortcut {
             .py_1()
             .line_height(px(12.))
             .rounded_sm()
-            .bg(PALETTE.muted)
-            .text_color(PALETTE.foreground)
+            .bg(PALETTE.accent)
+            .text_color(PALETTE.accent_foreground)
             .child(self.text)
     }
 }

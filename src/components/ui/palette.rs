@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 
 use gpui::{rgb, Rgba};
 
-pub static PALETTE: LazyLock<Palette> = LazyLock::new(|| Palette::default());
+pub static PALETTE: LazyLock<Palette> = LazyLock::new(Palette::default);
 
 pub struct Palette {
     pub background: Rgba,

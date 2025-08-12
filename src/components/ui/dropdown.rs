@@ -52,7 +52,7 @@ impl DropdownContent {
         action: A,
     ) -> Self
     where
-        A: 'static + Fn(&mut Window, &mut App) -> (),
+        A: 'static + Fn(&mut Window, &mut App),
     {
         self.items.push(DropdownItem {
             id: id.into(),
@@ -66,7 +66,7 @@ impl DropdownContent {
     #[allow(dead_code)]
     fn item_style<S>(mut self, f: S) -> Self
     where
-        S: FnOnce(&mut StyleRefinement) -> (),
+        S: FnOnce(&mut StyleRefinement),
     {
         f(&mut self.item_style);
         self
@@ -169,17 +169,19 @@ impl Render for DropdownContent {
 struct DropdownItem {
     id: ElementId,
     label: SharedString,
-    action: Rc<dyn Fn(&mut Window, &mut App) -> ()>,
+    action: Rc<ItemAction>,
     separate: bool,
 }
+type ItemAction = dyn Fn(&mut Window, &mut App);
 
 pub struct Dropdown<M: ManagedView> {
     id: ElementId,
 
     anchor: Corner,
     trigger: Option<AnyElement>,
-    content_builder: Option<Rc<dyn Fn(&mut Context<M>) -> M + 'static>>,
+    content_builder: Option<Rc<ContentBuilder<M>>>,
 }
+type ContentBuilder<M> = dyn Fn(&mut Context<M>) -> M;
 
 impl<M> Dropdown<M>
 where
@@ -353,7 +355,7 @@ impl<M: ManagedView> Element for Dropdown<M> {
                         .as_ref()
                         .into_iter()
                         .chain(popover.as_ref())
-                        .map(|(id, _)| id.clone()),
+                        .map(|(id, _)| *id),
                     cx,
                 );
 
