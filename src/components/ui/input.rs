@@ -163,7 +163,7 @@ impl TextInput {
 
     fn clear(&mut self, _: &Clear, _: &mut Window, cx: &mut Context<Self>) {
         if self.content.is_empty() {
-            cx.quit();
+            cx.propagate();
             return;
         }
 
@@ -484,44 +484,54 @@ impl Element for TextElement {
         let style = window.text_style();
 
         let (display_text, text_color) = if content.is_empty() {
-            (input.placeholder.clone(), PALETTE.muted_foreground.into())
+            (input.placeholder.clone(), PALETTE.muted.into())
         } else {
             (content.clone(), style.color)
         };
 
-        let run = TextRun {
-            len: display_text.len(),
-            font: style.font(),
-            color: text_color,
-            background_color: None,
-            underline: None,
-            strikethrough: None,
-        };
         let runs = if let Some(marked_range) = input.marked_range.as_ref() {
             vec![
                 TextRun {
                     len: marked_range.start,
-                    ..run.clone()
+                    font: style.font(),
+                    color: text_color,
+                    background_color: None,
+                    underline: None,
+                    strikethrough: None,
                 },
                 TextRun {
                     len: marked_range.end - marked_range.start,
+                    font: style.font(),
+                    color: text_color,
+                    background_color: None,
                     underline: Some(UnderlineStyle {
-                        color: Some(run.color),
+                        color: Some(text_color),
                         thickness: px(1.0),
                         wavy: false,
                     }),
-                    ..run.clone()
+                    strikethrough: None,
                 },
                 TextRun {
                     len: display_text.len() - marked_range.end,
-                    ..run.clone()
+                    font: style.font(),
+                    color: text_color,
+                    background_color: None,
+                    underline: None,
+                    strikethrough: None,
                 },
             ]
             .into_iter()
             .filter(|run| run.len > 0)
             .collect()
         } else {
-            vec![run]
+            vec![TextRun {
+                len: display_text.len(),
+                font: style.font(),
+                color: text_color,
+                background_color: None,
+                underline: None,
+                strikethrough: None,
+            }]
         };
 
         let font_size = style.font_size.to_pixels(window.rem_size());

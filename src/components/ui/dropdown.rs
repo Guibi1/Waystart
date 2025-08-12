@@ -114,6 +114,7 @@ impl Render for DropdownContent {
                 this.style().refine(&self.style);
                 this
             })
+            .on_action(cx.listener(|_, _: &Cancel, _, cx| cx.emit(DismissEvent)))
             .on_action(cx.listener(|this, _: &SelectPrev, _, cx| {
                 this.selected = if this.selected == 0 {
                     this.items.len().saturating_sub(1)
@@ -135,10 +136,6 @@ impl Render for DropdownContent {
                     (item.action)(window, cx);
                     cx.emit(DismissEvent);
                 }
-            }))
-            .on_action(cx.listener(|_, _: &Cancel, _, cx| {
-                cx.propagate();
-                cx.emit(DismissEvent);
             }))
             .children(self.items.iter().enumerate().map(|(i, item)| {
                 div()
