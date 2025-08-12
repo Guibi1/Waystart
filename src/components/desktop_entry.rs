@@ -7,16 +7,16 @@ use gpui::{
 };
 
 use crate::components::ui::palette::PALETTE;
-use crate::dapps;
+use crate::desktop_entry;
 
 #[derive(IntoElement)]
 pub struct DesktopEntry {
-    entry: Rc<dapps::DesktopEntry>,
+    entry: Rc<desktop_entry::DesktopEntry>,
     selected: bool,
 }
 
 impl DesktopEntry {
-    pub fn new(entry: Rc<dapps::DesktopEntry>, selected: bool) -> Self {
+    pub fn new(entry: Rc<desktop_entry::DesktopEntry>, selected: bool) -> Self {
         DesktopEntry { entry, selected }
     }
 }
@@ -37,7 +37,7 @@ impl RenderOnce for DesktopEntry {
             .when_some(self.entry.icon.as_ref(), |this, icon| {
                 this.child(
                     img(ImageSource::Resource(Resource::Path(icon.clone())))
-                        .size_8()
+                        .size_4()
                         .object_fit(ObjectFit::Contain),
                 )
             })
@@ -50,6 +50,6 @@ impl RenderOnce for DesktopEntry {
                         .child(description),
                 )
             })
-            .on_click(move |_e, _window, _app| self.entry.open())
+            .on_click(move |_, _, cx| self.entry.open(cx))
     }
 }

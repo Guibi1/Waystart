@@ -6,10 +6,10 @@ use gpui::{
 use crate::components::Waystart;
 
 mod components;
-mod dapps;
+mod desktop_entry;
 
 fn main() {
-    let dapps = dapps::get_dapps();
+    let desktop_entries = desktop_entry::get_desktop_entries();
 
     Application::new().run(|cx| {
         let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
@@ -30,7 +30,7 @@ fn main() {
                 ..Default::default()
             },
             |window, cx| {
-                let root = cx.new(|cx| Waystart::new(dapps, cx));
+                let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
                 window.focus(&root.focus_handle(cx));
                 root
             },

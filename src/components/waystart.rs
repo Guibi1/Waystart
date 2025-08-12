@@ -7,7 +7,7 @@ use gpui::{
 
 use crate::components::ui::{Separator, Shortcut, TextInput, PALETTE};
 use crate::components::{DesktopEntry, PowerOptions};
-use crate::dapps;
+use crate::desktop_entry;
 
 actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Quit]);
 const CONTEXT: &str = "Waystart";
@@ -23,16 +23,16 @@ pub(super) fn init(cx: &mut App) {
 
 pub struct Waystart {
     focus_handle: FocusHandle,
-    desktop_entries: Vec<Rc<dapps::DesktopEntry>>,
+    desktop_entries: Vec<Rc<desktop_entry::DesktopEntry>>,
     search_bar: Entity<TextInput>,
     selected: usize,
 }
 
 impl Waystart {
-    pub fn new(dapps: Vec<dapps::DesktopEntry>, cx: &mut Context<Self>) -> Self {
+    pub fn new(desktop_entries: Vec<desktop_entry::DesktopEntry>, cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         Self {
-            desktop_entries: dapps.into_iter().map(Rc::new).collect(),
+            desktop_entries: desktop_entries.into_iter().map(Rc::new).collect(),
             search_bar: cx.new(|_| TextInput::new(focus_handle.clone()).placeholder("Search")),
             focus_handle,
             selected: 0,
@@ -50,6 +50,10 @@ impl Render for Waystart {
             .cloned()
             .collect::<Vec<_>>();
         let entries_count = entries.len();
+
+        if self.selected >= entries_count {
+            self.selected = entries_count.saturating_sub(1);
+        }
 
         div()
             .size_full()
@@ -81,9 +85,9 @@ impl Render for Waystart {
             }))
             .on_action({
                 let entry = entries.get(self.selected).cloned();
-                move |_: &OpenProgram, _, _| {
+                move |_: &OpenProgram, _, cx| {
                     if let Some(entry) = &entry {
-                        entry.open()
+                        entry.open(cx)
                     }
                 }
             })
