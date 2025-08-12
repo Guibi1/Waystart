@@ -156,7 +156,7 @@ impl Render for DropdownContent {
                     }))
                     .on_click({
                         let action = item.action.clone();
-                        cx.listener(move |_, _, window, cx: &mut Context<'_, DropdownContent>| {
+                        cx.listener(move |_, _, window, cx| {
                             action(window, cx);
                             cx.emit(DismissEvent);
                         })
@@ -244,6 +244,7 @@ where
 
 pub struct DropdownLayoutState<M> {
     content_view: Rc<RefCell<Option<Entity<M>>>>,
+    previously_focused: Rc<RefCell<Option<FocusHandle>>>,
     popover: Option<(LayoutId, AnyElement)>,
     trigger: Option<(LayoutId, AnyElement)>,
     trigger_bounds: Option<Bounds<Pixels>>,
@@ -253,6 +254,7 @@ impl<M> Default for DropdownLayoutState<M> {
     fn default() -> Self {
         Self {
             content_view: Rc::new(RefCell::new(None)),
+            previously_focused: Rc::new(RefCell::new(None)),
             popover: None,
             trigger: None,
             trigger_bounds: None,
@@ -315,9 +317,16 @@ impl<M: ManagedView> Element for Dropdown<M> {
                                 .child(content_view.clone())
                                 .on_mouse_down_out({
                                     let content_view = element_state.content_view.clone();
+                                    let previously_focused =
+                                        element_state.previously_focused.clone();
                                     move |_, window, cx| {
                                         cx.stop_propagation();
                                         window.prevent_default();
+                                        if let Some(previous_focus_handle) =
+                                            previously_focused.borrow_mut().take()
+                                        {
+                                            window.focus(&previous_focus_handle);
+                                        }
                                         *content_view.borrow_mut() = None;
                                         window.refresh();
                                     }
@@ -421,6 +430,7 @@ impl<M: ManagedView> Element for Dropdown<M> {
                 };
 
                 let content_view = element_state.content_view.clone();
+                let previously_focused = element_state.previously_focused.clone();
                 let hitbox_id = prepaint.hitbox.id;
 
                 window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
@@ -431,17 +441,19 @@ impl<M: ManagedView> Element for Dropdown<M> {
                         cx.stop_propagation();
                         window.prevent_default();
 
-                        let previous_focus_handle = window.focused(cx);
+                        *previously_focused.borrow_mut() = window.focused(cx);
                         let new_content_view = cx.new(|cx| content_builder(cx));
 
                         window
                             .subscribe(&new_content_view, cx, {
                                 let content_view = content_view.clone();
-                                move |modal, _: &DismissEvent, window, cx| {
-                                    if modal.focus_handle(cx).contains_focused(window, cx) {
-                                        if let Some(previous_focus_handle) = &previous_focus_handle
+                                let previously_focused = previously_focused.clone();
+                                move |popover, _: &DismissEvent, window, cx| {
+                                    if popover.focus_handle(cx).contains_focused(window, cx) {
+                                        if let Some(previous_focus_handle) =
+                                            previously_focused.borrow_mut().take()
                                         {
-                                            window.focus(previous_focus_handle);
+                                            window.focus(&previous_focus_handle);
                                         }
                                     }
                                     *content_view.borrow_mut() = None;
