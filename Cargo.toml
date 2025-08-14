@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 freedesktop-desktop-entry = "0.7.13"
 freedesktop-icons = "0.4.0"
-gpui = { git = "https://github.com/zed-industries/zed" }
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false, features = [
+    "wayland",
+    "http_client",
+] }
 gpui_macros = { git = "https://github.com/zed-industries/zed" }
 unicode-segmentation = "1.12.0"
