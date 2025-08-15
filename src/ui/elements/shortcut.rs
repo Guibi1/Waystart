@@ -1,6 +1,6 @@
 use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 
-use crate::components::ui::PALETTE;
+use crate::ui::PALETTE;
 
 #[derive(IntoElement)]
 pub struct Shortcut {

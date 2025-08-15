@@ -9,7 +9,7 @@ use gpui::{
 };
 use unicode_segmentation::*;
 
-use crate::components::ui::PALETTE;
+use crate::ui::PALETTE;
 
 actions!(
     text_input,

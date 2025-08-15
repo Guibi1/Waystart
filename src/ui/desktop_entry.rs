@@ -6,8 +6,8 @@ use gpui::{
     RenderOnce, Resource, StatefulInteractiveElement, Styled, StyledImage, Window,
 };
 
-use crate::components::ui::palette::PALETTE;
 use crate::desktop_entry;
+use crate::ui::PALETTE;
 
 #[derive(IntoElement)]
 pub struct DesktopEntry {

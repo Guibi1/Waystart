@@ -5,9 +5,9 @@ use gpui::{
     InteractiveElement, IntoElement, KeyBinding, ParentElement, Render, Styled, Window,
 };
 
-use crate::components::ui::{Separator, Shortcut, TextInput, PALETTE};
-use crate::components::{DesktopEntry, PowerOptions};
 use crate::desktop_entry;
+use crate::ui::elements::{Separator, Shortcut, TextInput};
+use crate::ui::{DesktopEntry, PowerOptions, PALETTE};
 
 actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Quit]);
 const CONTEXT: &str = "Waystart";

@@ -10,7 +10,7 @@ use gpui::{
 };
 use gpui::{AppContext, SharedString, StatefulInteractiveElement};
 
-use crate::components::ui::PALETTE;
+use crate::ui::PALETTE;
 
 actions!(dropdown, [SelectPrev, SelectNext, Confirm, Cancel]);
 const CONTEXT: &str = "Dropdown";

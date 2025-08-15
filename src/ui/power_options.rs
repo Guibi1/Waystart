@@ -2,8 +2,8 @@ use gpui::{
     div, App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window,
 };
 
-use crate::components::ui::dropdown::{Dropdown, DropdownContent};
-use crate::components::ui::palette::PALETTE;
+use crate::ui::elements::dropdown::{Dropdown, DropdownContent};
+use crate::ui::palette::PALETTE;
 
 #[derive(IntoElement)]
 pub struct PowerOptions {}
