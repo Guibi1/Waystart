@@ -32,8 +32,6 @@ impl RenderOnce for DesktopEntry {
             .items_center()
             .gap_4()
             .rounded_lg()
-            .hover(|style| style.bg(PALETTE.muted))
-            .when(self.selected, |this| this.bg(PALETTE.muted))
             .when_some(self.entry.icon.as_ref(), |this, icon| {
                 this.child(
                     img(ImageSource::Resource(Resource::Path(icon.clone())))
@@ -42,12 +40,17 @@ impl RenderOnce for DesktopEntry {
                 )
             })
             .child(self.entry.name.clone())
-            .when_some(self.entry.description.clone(), |this, description| {
-                this.child(
-                    div()
-                        .text_sm()
-                        .text_color(PALETTE.muted_foreground)
-                        .child(description),
+            .when(self.selected, |this| {
+                this.bg(PALETTE.muted).when_some(
+                    self.entry.description.clone(),
+                    |this, description| {
+                        this.child(
+                            div()
+                                .text_sm()
+                                .text_color(PALETTE.muted_foreground)
+                                .child(description),
+                        )
+                    },
                 )
             })
             .on_click(move |_, _, cx| self.entry.open(cx))
