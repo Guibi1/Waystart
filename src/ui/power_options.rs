@@ -4,9 +4,9 @@ use gpui::{
     App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window, div,
 };
 
+use crate::ui::CloseWaystart;
 use crate::ui::elements::dropdown::{Dropdown, DropdownContent};
 use crate::ui::palette::PALETTE;
-use crate::ui::waystart::Close;
 
 #[derive(IntoElement)]
 pub struct PowerOptions {}
@@ -38,7 +38,7 @@ impl RenderOnce for PowerOptions {
                     .w_32()
                     .item("power-option-lock", "Lock", |_, cx| {
                         match Command::new("loginctl").arg("lock-session").spawn() {
-                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
                                 eprintln!("Failed to lock session: {}", e);
                             }
@@ -46,7 +46,7 @@ impl RenderOnce for PowerOptions {
                     })
                     .item("power-option-sleep", "Sleep", |_, cx| {
                         match Command::new("systemctl").arg("suspend").spawn() {
-                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
                                 eprintln!("Failed to sleep: {}", e);
                             }
@@ -56,7 +56,7 @@ impl RenderOnce for PowerOptions {
                         "power-option-shut-down",
                         "Shut down",
                         |_, cx| match Command::new("systemctl").arg("poweroff").spawn() {
-                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
                                 eprintln!("Failed to shut down: {}", e);
                             }
@@ -66,7 +66,7 @@ impl RenderOnce for PowerOptions {
                         "power-option-restart",
                         "Restart",
                         |_, cx| match Command::new("systemctl").arg("reboot").spawn() {
-                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
                                 eprintln!("Failed to restart: {}", e);
                             }

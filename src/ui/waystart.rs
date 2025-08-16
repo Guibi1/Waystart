@@ -1,13 +1,15 @@
 use std::rc::Rc;
 
+use gpui::prelude::FluentBuilder;
 use gpui::{
-    App, AppContext, Context, Entity, FocusHandle, Focusable, InteractiveElement, IntoElement,
-    KeyBinding, ParentElement, Render, Styled, Window, actions, div, uniform_list,
+    App, AppContext, Context, Entity, FocusHandle, Focusable, ImageSource, InteractiveElement,
+    IntoElement, KeyBinding, ObjectFit, ParentElement, Render, Resource,
+    StatefulInteractiveElement, Styled, StyledImage, Window, actions, div, img, uniform_list,
 };
 
 use crate::desktop_entry;
 use crate::ui::elements::{Separator, Shortcut, TextInput};
-use crate::ui::{DesktopEntry, PALETTE, PowerOptions};
+use crate::ui::{PALETTE, PowerOptions};
 
 actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Close]);
 const CONTEXT: &str = "Waystart";
@@ -106,14 +108,53 @@ impl Render for Waystart {
                         uniform_list(
                             "entry_list",
                             entries_count,
-                            cx.processor(move |this, range: std::ops::Range<usize>, _, _| {
+                            cx.processor(move |this, range: std::ops::Range<usize>, _, cx| {
                                 entries
                                     .iter()
                                     .cloned()
                                     .enumerate()
                                     .skip(range.start)
                                     .take(range.end - range.start)
-                                    .map(|(i, entry)| DesktopEntry::new(entry, this.selected == i))
+                                    .map(|(i, entry)| {
+                                        div()
+                                            .id(entry.name.clone())
+                                            .w_full()
+                                            .px_4()
+                                            .py_1p5()
+                                            .flex()
+                                            .items_center()
+                                            .gap_4()
+                                            .rounded_lg()
+                                            .when_some(entry.icon.as_ref(), |this, icon| {
+                                                this.child(
+                                                    img(ImageSource::Resource(Resource::Path(
+                                                        icon.clone(),
+                                                    )))
+                                                    .size_4()
+                                                    .object_fit(ObjectFit::Contain),
+                                                )
+                                            })
+                                            .child(entry.name.clone())
+                                            .when(i == this.selected, |this| {
+                                                this.bg(PALETTE.muted).when_some(
+                                                    entry.description.clone(),
+                                                    |this, description| {
+                                                        this.child(
+                                                            div()
+                                                                .text_sm()
+                                                                .text_color(
+                                                                    PALETTE.muted_foreground,
+                                                                )
+                                                                .child(description),
+                                                        )
+                                                    },
+                                                )
+                                            })
+                                            .on_mouse_move(
+                                                cx.listener(move |this, _, _, _| this.selected = i),
+                                            )
+                                            .on_click(move |_, _, cx| entry.open(cx))
+                                    })
                                     .collect()
                             }),
                         )

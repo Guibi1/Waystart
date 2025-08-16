@@ -5,7 +5,7 @@ use gpui::{
 
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
-use crate::ui::{Close, Waystart};
+use crate::ui::{CloseWaystart, Waystart};
 
 mod cli;
 mod desktop_entry;
@@ -48,7 +48,7 @@ fn start_app(daemonize: bool) {
 
     application.run(move |cx| {
         ui::init(cx);
-        cx.on_action(move |_: &Close, cx| {
+        cx.on_action(move |_: &CloseWaystart, cx| {
             if daemonize {
                 cx.hide();
             } else {

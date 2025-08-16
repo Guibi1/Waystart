@@ -7,6 +7,8 @@ use std::sync::Arc;
 
 use gpui::{App, SharedString};
 
+use crate::ui::CloseWaystart;
+
 #[derive(Debug)]
 pub struct DesktopEntry {
     pub name: SharedString,
@@ -45,7 +47,7 @@ impl DesktopEntry {
         }
 
         match cmd.spawn() {
-            Ok(_) => cx.quit(),
+            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
             Err(e) => {
                 eprintln!("Failed to launch {}: {}.", self.name, e);
                 if self.open_in_terminal {
