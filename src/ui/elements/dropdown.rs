@@ -8,7 +8,7 @@ use gpui::{
     Pixels, Refineable, Render, Style, StyleRefinement, Styled, Window, actions, anchored,
     deferred, div, prelude::FluentBuilder as _, px,
 };
-use gpui::{AppContext, SharedString, StatefulInteractiveElement};
+use gpui::{AppContext, CursorStyle, SharedString, StatefulInteractiveElement};
 
 use crate::ui::PALETTE;
 
@@ -106,7 +106,7 @@ impl Render for DropdownContent {
             .p_1()
             .text_color(PALETTE.foreground)
             .bg(PALETTE.background)
-            .border_color(PALETTE.border)
+            .border_color(PALETTE.accent)
             .border_1()
             .rounded_md()
             .overflow_hidden()
@@ -143,6 +143,7 @@ impl Render for DropdownContent {
                     .px_2()
                     .border_1()
                     .rounded_sm()
+                    .cursor(CursorStyle::PointingHand)
                     .map(|mut this| {
                         this.style().refine(&self.item_style);
                         this

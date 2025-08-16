@@ -1,9 +1,12 @@
+use std::process::Command;
+
 use gpui::{
     App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window, div,
 };
 
 use crate::ui::elements::dropdown::{Dropdown, DropdownContent};
 use crate::ui::palette::PALETTE;
+use crate::ui::waystart::Close;
 
 #[derive(IntoElement)]
 pub struct PowerOptions {}
@@ -33,12 +36,42 @@ impl RenderOnce for PowerOptions {
             .content(|cx| {
                 DropdownContent::new(cx)
                     .w_32()
-                    .item("power-option-lock", "Lock", |_, _| {
-                        println!("Lock action triggered");
+                    .item("power-option-lock", "Lock", |_, cx| {
+                        match Command::new("loginctl").arg("lock-session").spawn() {
+                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Err(e) => {
+                                eprintln!("Failed to lock session: {}", e);
+                            }
+                        }
                     })
-                    .item("power-option-sleep", "Sleep", |_, _| {})
-                    .item("power-option-shut-down", "Shut down", |_, _| {})
-                    .item("power-option-restart", "Restart", |_, _| {})
+                    .item("power-option-sleep", "Sleep", |_, cx| {
+                        match Command::new("systemctl").arg("suspend").spawn() {
+                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Err(e) => {
+                                eprintln!("Failed to sleep: {}", e);
+                            }
+                        }
+                    })
+                    .item(
+                        "power-option-shut-down",
+                        "Shut down",
+                        |_, cx| match Command::new("systemctl").arg("poweroff").spawn() {
+                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Err(e) => {
+                                eprintln!("Failed to shut down: {}", e);
+                            }
+                        },
+                    )
+                    .item(
+                        "power-option-restart",
+                        "Restart",
+                        |_, cx| match Command::new("systemctl").arg("reboot").spawn() {
+                            Ok(_) => cx.dispatch_action(&Close {}),
+                            Err(e) => {
+                                eprintln!("Failed to restart: {}", e);
+                            }
+                        },
+                    )
             })
     }
 }
