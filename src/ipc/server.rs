@@ -4,7 +4,7 @@ use smol::net::unix::{UnixListener, UnixStream};
 use gpui::{AppContext, AsyncApp, WindowHandle};
 use smol::stream::StreamExt;
 
-use crate::ipc::{MESSAGE_CLOSE, MESSAGE_OPEN, MESSAGE_QUIT, SOCKET_PATH};
+use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
 use crate::ui::Waystart;
 
 #[derive(Clone)]
@@ -56,10 +56,10 @@ impl SocketServer {
 
         while let Some(Ok(message)) = lines.next().await {
             if let Err(e) = match message.as_bytes() {
-                MESSAGE_OPEN => cx.update_window(window.into(), |_, window, _| {
+                MESSAGE_SHOW => cx.update_window(window.into(), |_, window, _| {
                     window.activate_window();
                 }),
-                MESSAGE_CLOSE => cx.update(|cx| cx.hide()),
+                MESSAGE_HIDE => cx.update(|cx| cx.hide()),
                 MESSAGE_QUIT => cx.update(|cx| cx.quit()),
                 _ => {
                     eprintln!("Received unknown IPC message: {}", message);

@@ -15,9 +15,9 @@ mod ui;
 fn main() {
     match cli::Waystart::from_env_or_exit().subcommand {
         cli::WaystartCmd::Standalone(_) => match SocketClient::try_connect().ok() {
-            Some(client) => client.send_message_socket(SocketMessage::Open),
+            Some(client) => client.send_message_socket(SocketMessage::Show),
             None => {
-                start_app(true);
+                start_app(false);
             }
         },
 
@@ -26,23 +26,23 @@ fn main() {
                 let client = SocketClient::connect();
                 client.send_message_socket(SocketMessage::Quit);
             } else {
-                start_app(false);
+                start_app(true);
             }
         }
 
         cli::WaystartCmd::Show(_) => {
             let client = SocketClient::connect();
-            client.send_message_socket(SocketMessage::Open);
+            client.send_message_socket(SocketMessage::Show);
         }
 
         cli::WaystartCmd::Hide(_) => {
             let client = SocketClient::connect();
-            client.send_message_socket(SocketMessage::Close);
+            client.send_message_socket(SocketMessage::Hide);
         }
     }
 }
 
-fn start_app(show: bool) {
+fn start_app(daemonize: bool) {
     let desktop_entries = desktop_entry::get_desktop_entries();
     let application = Application::new();
 
@@ -55,8 +55,8 @@ fn start_app(show: bool) {
                 WindowOptions {
                     kind: WindowKind::PopUp,
                     is_movable: true,
-                    show,
-                    focus: show,
+                    show: !daemonize,
+                    focus: !daemonize,
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     window_decorations: Some(WindowDecorations::Client),
                     titlebar: Some(TitlebarOptions {
@@ -67,14 +67,16 @@ fn start_app(show: bool) {
                     ..Default::default()
                 },
                 |window, cx| {
-                    let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
+                    let root = cx.new(|cx| Waystart::new(desktop_entries, daemonize, cx));
                     window.focus(&root.focus_handle(cx));
                     root
                 },
             )
             .unwrap();
 
-        let server = SocketServer::new(cx.to_async(), window);
-        server.listen();
+        if daemonize {
+            let server = SocketServer::new(cx.to_async(), window);
+            server.listen();
+        }
     });
 }

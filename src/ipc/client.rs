@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 
-use crate::ipc::{MESSAGE_CLOSE, MESSAGE_OPEN, MESSAGE_QUIT, SOCKET_PATH};
+use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
 
 pub struct SocketClient {
     stream: RefCell<UnixStream>,
@@ -22,8 +22,8 @@ impl SocketClient {
     pub fn send_message_socket(&self, message: SocketMessage) {
         let mut stream = self.stream.borrow_mut();
         if let Err(e) = match message {
-            SocketMessage::Open => stream.write_all(MESSAGE_OPEN),
-            SocketMessage::Close => stream.write_all(MESSAGE_CLOSE),
+            SocketMessage::Show => stream.write_all(MESSAGE_SHOW),
+            SocketMessage::Hide => stream.write_all(MESSAGE_HIDE),
             SocketMessage::Quit => stream.write_all(MESSAGE_QUIT),
         } {
             eprintln!("Failed to send IPC message: {}", e);
@@ -32,7 +32,7 @@ impl SocketClient {
 }
 
 pub enum SocketMessage {
-    Open,
-    Close,
+    Show,
+    Hide,
     Quit,
 }
