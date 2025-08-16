@@ -5654,6 +5654,7 @@ dependencies = [
  "freedesktop-icons",
  "gpui",
  "gpui_macros",
+ "smol",
  "unicode-segmentation",
  "xflags",
 ]

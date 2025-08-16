@@ -1,7 +1,7 @@
 [package]
 name = "waystart"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 freedesktop-desktop-entry = "0.7.13"
@@ -11,5 +11,6 @@ gpui = { git = "https://github.com/zed-industries/zed", default-features = false
     "http_client",
 ] }
 gpui_macros = { git = "https://github.com/zed-industries/zed" }
+smol = "2.0.2"
 unicode-segmentation = "1.12.0"
 xflags = "0.3.2"

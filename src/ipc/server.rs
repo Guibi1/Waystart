@@ -1,61 +1,73 @@
-use std::io::{BufRead, BufReader};
-use std::os::unix::net::{UnixListener, UnixStream};
+use smol::io::{AsyncBufReadExt, BufReader};
+use smol::net::unix::{UnixListener, UnixStream};
 
-use gpui::BackgroundExecutor;
+use gpui::{AppContext, AsyncApp, WindowHandle};
+use smol::stream::StreamExt;
 
 use crate::ipc::{MESSAGE_CLOSE, MESSAGE_OPEN, MESSAGE_QUIT, SOCKET_PATH};
+use crate::ui::Waystart;
 
+#[derive(Clone)]
 pub struct SocketServer {
-    executor: BackgroundExecutor,
+    app: AsyncApp,
+    window: WindowHandle<Waystart>,
 }
 
 impl SocketServer {
-    pub fn new(executor: &BackgroundExecutor) -> Self {
-        SocketServer {
-            executor: executor.clone(),
-        }
+    pub fn new(app: AsyncApp, window: WindowHandle<Waystart>) -> Self {
+        Self { app, window }
     }
 
     pub fn listen(&self) {
+        if std::fs::exists(SOCKET_PATH).ok().unwrap_or(false) {
+            std::fs::remove_file(SOCKET_PATH).expect("Failed to remove existing IPC socket");
+        }
+
         let listener = UnixListener::bind(SOCKET_PATH).expect("Failed to bind IPC socket");
 
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    self.executor
-                        .spawn(async move {
-                            Self::handle_ipc_stream(stream);
-                        })
-                        .detach();
+        let this = self.clone();
+        self.app
+            .spawn(async move |cx| {
+                loop {
+                    match listener.accept().await {
+                        Ok((stream, _)) => {
+                            let window = this.window.clone();
+                            cx.spawn(async move |cx| {
+                                Self::handle_ipc_stream(stream, window, cx).await
+                            })
+                            .detach();
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to accept IPC connection: {}", e);
+                        }
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Failed to accept IPC connection: {}", e);
-                }
-            }
-        }
+            })
+            .detach();
     }
 
-    fn handle_ipc_stream(stream: UnixStream) {
+    async fn handle_ipc_stream(
+        stream: UnixStream,
+        window: WindowHandle<Waystart>,
+        cx: &mut AsyncApp,
+    ) {
         let reader = BufReader::new(stream);
+        let mut lines = reader.lines();
 
-        for message in reader.lines() {
-            let Ok(message) = message else {
-                break;
-            };
-
-            match message.as_bytes() {
-                MESSAGE_OPEN => {
-                    // Handle open command
-                }
-                MESSAGE_CLOSE => {
-                    // Handle close command
-                }
-                MESSAGE_QUIT => {
-                    // Handle quit command
-                }
+        while let Some(Ok(message)) = lines.next().await {
+            if let Err(e) = match message.as_bytes() {
+                MESSAGE_OPEN => cx.update_window(window.into(), |_, window, _| {
+                    window.activate_window();
+                }),
+                MESSAGE_CLOSE => cx.update(|cx| cx.hide()),
+                MESSAGE_QUIT => cx.update(|cx| cx.quit()),
                 _ => {
                     eprintln!("Received unknown IPC message: {}", message);
+                    return;
                 }
+            } {
+                eprintln!("Lost reference to app: {}", e);
+                return;
             }
         }
     }

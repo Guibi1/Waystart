@@ -1,15 +1,15 @@
 use std::rc::Rc;
 
 use gpui::{
-    actions, div, uniform_list, App, AppContext, Context, Entity, FocusHandle, Focusable,
-    InteractiveElement, IntoElement, KeyBinding, ParentElement, Render, Styled, Window,
+    App, AppContext, Context, Entity, FocusHandle, Focusable, InteractiveElement, IntoElement,
+    KeyBinding, ParentElement, Render, Styled, Window, actions, div, uniform_list,
 };
 
 use crate::desktop_entry;
 use crate::ui::elements::{Separator, Shortcut, TextInput};
-use crate::ui::{DesktopEntry, PowerOptions, PALETTE};
+use crate::ui::{DesktopEntry, PALETTE, PowerOptions};
 
-actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Quit]);
+actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Close]);
 const CONTEXT: &str = "Waystart";
 
 pub(super) fn init(cx: &mut App) {
@@ -17,7 +17,7 @@ pub(super) fn init(cx: &mut App) {
         KeyBinding::new("up", SelectPrev, Some(CONTEXT)),
         KeyBinding::new("down", SelectNext, Some(CONTEXT)),
         KeyBinding::new("enter", OpenProgram, Some(CONTEXT)),
-        KeyBinding::new("escape", Quit, Some(CONTEXT)),
+        KeyBinding::new("escape", Close, Some(CONTEXT)),
     ]);
 }
 
@@ -66,7 +66,7 @@ impl Render for Waystart {
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
-            .on_action(|_: &Quit, _, cx| cx.quit())
+            .on_action(|_: &Close, _, cx| cx.hide())
             .on_action(cx.listener(move |this, _: &SelectPrev, _, cx| {
                 this.selected = if this.selected == 0 {
                     entries_count.saturating_sub(1)

@@ -1,6 +1,6 @@
 use gpui::{
-    px, size, AppContext, Application, BackgroundExecutor, Bounds, Focusable, TitlebarOptions,
-    WindowBounds, WindowDecorations, WindowKind, WindowOptions,
+    AppContext, Application, Bounds, Focusable, TitlebarOptions, WindowBounds, WindowDecorations,
+    WindowKind, WindowOptions, px, size,
 };
 
 use crate::ipc::client::{SocketClient, SocketMessage};
@@ -14,19 +14,19 @@ mod ui;
 
 fn main() {
     match cli::Waystart::from_env_or_exit().subcommand {
+        cli::WaystartCmd::Standalone(_) => match SocketClient::try_connect().ok() {
+            Some(client) => client.send_message_socket(SocketMessage::Open),
+            None => {
+                start_app(true);
+            }
+        },
+
         cli::WaystartCmd::Daemon(daemon) => {
             if daemon.exit {
                 let client = SocketClient::connect();
                 client.send_message_socket(SocketMessage::Quit);
             } else {
-                let executor = start_app();
-                let socket_listener = SocketServer::new(&executor);
-
-                executor
-                    .spawn(async move {
-                        socket_listener.listen();
-                    })
-                    .detach();
+                start_app(false);
             }
         }
 
@@ -42,39 +42,39 @@ fn main() {
     }
 }
 
-fn start_app() -> BackgroundExecutor {
+fn start_app(show: bool) {
     let desktop_entries = desktop_entry::get_desktop_entries();
     let application = Application::new();
-    let executor = application.background_executor();
 
-    application.run(|cx| {
-        let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
+    application.run(move |cx| {
         ui::init(cx);
 
-        cx.open_window(
-            WindowOptions {
-                kind: WindowKind::PopUp,
-                focus: true,
-                show: false,
-                window_bounds: Some(WindowBounds::Windowed(bounds)),
-                window_decorations: Some(WindowDecorations::Client),
-                titlebar: Some(TitlebarOptions {
-                    title: Some("Waystart".into()),
-                    appears_transparent: true,
+        let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
+        let window = cx
+            .open_window(
+                WindowOptions {
+                    kind: WindowKind::PopUp,
+                    is_movable: true,
+                    show,
+                    focus: show,
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    window_decorations: Some(WindowDecorations::Client),
+                    titlebar: Some(TitlebarOptions {
+                        title: Some("Waystart".into()),
+                        appears_transparent: true,
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            },
-            |window, cx| {
-                let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
-                window.focus(&root.focus_handle(cx));
-                root
-            },
-        )
-        .unwrap();
+                },
+                |window, cx| {
+                    let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
+                    window.focus(&root.focus_handle(cx));
+                    root
+                },
+            )
+            .unwrap();
 
-        cx.hide();
+        let server = SocketServer::new(cx.to_async(), window);
+        server.listen();
     });
-
-    executor
 }

@@ -5,6 +5,8 @@ xflags! {
 
     /// A start menu for Wayland-based window managers.
     cmd waystart {
+        default cmd standalone {}
+
         /// Start the Waystart daemon.
         cmd daemon {
             /// Ask the daemon to exit gracefully.
@@ -29,18 +31,22 @@ pub struct Waystart {
 
 #[derive(Debug)]
 pub enum WaystartCmd {
-    Show(Show),
+    Standalone(Standalone),
     Daemon(Daemon),
+    Show(Show),
     Hide(Hide),
 }
 
 #[derive(Debug)]
-pub struct Show;
+pub struct Standalone;
 
 #[derive(Debug)]
 pub struct Daemon {
     pub exit: bool,
 }
+
+#[derive(Debug)]
+pub struct Show;
 
 #[derive(Debug)]
 pub struct Hide;

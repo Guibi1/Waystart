@@ -10,11 +10,13 @@ pub struct SocketClient {
 
 impl SocketClient {
     pub fn connect() -> Self {
-        SocketClient {
-            stream: RefCell::new(
-                UnixStream::connect(SOCKET_PATH).expect("Failed to bind IPC socket"),
-            ),
-        }
+        Self::try_connect().expect("Failed to bind IPC socket")
+    }
+
+    pub fn try_connect() -> std::io::Result<Self> {
+        Ok(Self {
+            stream: RefCell::new(UnixStream::connect(SOCKET_PATH)?),
+        })
     }
 
     pub fn send_message_socket(&self, message: SocketMessage) {
