@@ -19,6 +19,8 @@ pub(super) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("up", SelectPrev, Some(CONTEXT)),
         KeyBinding::new("down", SelectNext, Some(CONTEXT)),
+        KeyBinding::new("shift-tab", SelectPrev, Some(CONTEXT)),
+        KeyBinding::new("tab", SelectNext, Some(CONTEXT)),
         KeyBinding::new("enter", Confirm, Some(CONTEXT)),
         KeyBinding::new("escape", Cancel, Some(CONTEXT)),
     ])

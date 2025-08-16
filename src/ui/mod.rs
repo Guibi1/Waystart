@@ -9,7 +9,7 @@ pub mod elements;
 pub use desktop_entry::DesktopEntry;
 pub use palette::PALETTE;
 pub use power_options::PowerOptions;
-pub use waystart::Waystart;
+pub use waystart::{Close, Waystart};
 
 pub fn init(cx: &mut App) {
     waystart::init(cx);

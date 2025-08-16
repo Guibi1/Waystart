@@ -16,6 +16,8 @@ pub(super) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("up", SelectPrev, Some(CONTEXT)),
         KeyBinding::new("down", SelectNext, Some(CONTEXT)),
+        KeyBinding::new("shift-tab", SelectPrev, Some(CONTEXT)),
+        KeyBinding::new("tab", SelectNext, Some(CONTEXT)),
         KeyBinding::new("enter", OpenProgram, Some(CONTEXT)),
         KeyBinding::new("escape", Close, Some(CONTEXT)),
     ]);
@@ -26,22 +28,16 @@ pub struct Waystart {
     desktop_entries: Vec<Rc<desktop_entry::DesktopEntry>>,
     search_bar: Entity<TextInput>,
     selected: usize,
-    daemon: bool,
 }
 
 impl Waystart {
-    pub fn new(
-        desktop_entries: Vec<desktop_entry::DesktopEntry>,
-        daemon: bool,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    pub fn new(desktop_entries: Vec<desktop_entry::DesktopEntry>, cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         Self {
             desktop_entries: desktop_entries.into_iter().map(Rc::new).collect(),
             search_bar: cx.new(|_| TextInput::new(focus_handle.clone()).placeholder("Search")),
             focus_handle,
             selected: 0,
-            daemon,
         }
     }
 }
@@ -72,13 +68,6 @@ impl Render for Waystart {
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
-            .on_action(cx.listener(|this, _: &Close, _, cx| {
-                if this.daemon {
-                    cx.hide();
-                } else {
-                    cx.quit();
-                }
-            }))
             .on_action(cx.listener(move |this, _: &SelectPrev, _, cx| {
                 this.selected = if this.selected == 0 {
                     entries_count.saturating_sub(1)

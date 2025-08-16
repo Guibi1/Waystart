@@ -5,7 +5,7 @@ use gpui::{
 
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
-use crate::ui::Waystart;
+use crate::ui::{Close, Waystart};
 
 mod cli;
 mod desktop_entry;
@@ -48,6 +48,13 @@ fn start_app(daemonize: bool) {
 
     application.run(move |cx| {
         ui::init(cx);
+        cx.on_action(move |_: &Close, cx| {
+            if daemonize {
+                cx.hide();
+            } else {
+                cx.quit();
+            }
+        });
 
         let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
         let window = cx
@@ -67,7 +74,7 @@ fn start_app(daemonize: bool) {
                     ..Default::default()
                 },
                 |window, cx| {
-                    let root = cx.new(|cx| Waystart::new(desktop_entries, daemonize, cx));
+                    let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
                     window.focus(&root.focus_handle(cx));
                     root
                 },
