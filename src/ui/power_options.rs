@@ -1,5 +1,5 @@
 use gpui::{
-    div, App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window,
+    App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window, div,
 };
 
 use crate::ui::elements::dropdown::{Dropdown, DropdownContent};

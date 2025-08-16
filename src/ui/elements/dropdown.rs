@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnyElement, App, Bounds,
-    Context, Corner, DismissEvent, DispatchPhase, Element, ElementId, Entity, EventEmitter,
-    FocusHandle, Focusable, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement,
-    KeyBinding, LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels,
-    Refineable, Render, Style, StyleRefinement, Styled, Window,
+    AnyElement, App, Bounds, Context, Corner, DismissEvent, DispatchPhase, Element, ElementId,
+    Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox, InteractiveElement as _,
+    IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement,
+    Pixels, Refineable, Render, Style, StyleRefinement, Styled, Window, actions, anchored,
+    deferred, div, prelude::FluentBuilder as _, px,
 };
 use gpui::{AppContext, SharedString, StatefulInteractiveElement};
 
@@ -451,12 +451,11 @@ impl<M: ManagedView> Element for Dropdown<M> {
                                 let content_view = content_view.clone();
                                 let previously_focused = previously_focused.clone();
                                 move |popover, _: &DismissEvent, window, cx| {
-                                    if popover.focus_handle(cx).contains_focused(window, cx) {
-                                        if let Some(previous_focus_handle) =
+                                    if popover.focus_handle(cx).contains_focused(window, cx)
+                                        && let Some(previous_focus_handle) =
                                             previously_focused.borrow_mut().take()
-                                        {
-                                            window.focus(&previous_focus_handle);
-                                        }
+                                    {
+                                        window.focus(&previous_focus_handle);
                                     }
                                     *content_view.borrow_mut() = None;
                                     window.refresh();

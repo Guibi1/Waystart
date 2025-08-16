@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::prelude::FluentBuilder;
 use gpui::{
-    div, img, App, ImageSource, InteractiveElement, IntoElement, ObjectFit, ParentElement,
-    RenderOnce, Resource, StatefulInteractiveElement, Styled, StyledImage, Window,
+    App, ImageSource, InteractiveElement, IntoElement, ObjectFit, ParentElement, RenderOnce,
+    Resource, StatefulInteractiveElement, Styled, StyledImage, Window, div, img,
 };
 
 use crate::desktop_entry;

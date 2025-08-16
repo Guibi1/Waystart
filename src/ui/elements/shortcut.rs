@@ -1,4 +1,4 @@
-use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
+use gpui::{App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, div, px};
 
 use crate::ui::PALETTE;
 

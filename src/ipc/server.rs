@@ -31,9 +31,8 @@ impl SocketServer {
                 loop {
                     match listener.accept().await {
                         Ok((stream, _)) => {
-                            let window = this.window.clone();
                             cx.spawn(async move |cx| {
-                                Self::handle_ipc_stream(stream, window, cx).await
+                                Self::handle_ipc_stream(stream, this.window, cx).await
                             })
                             .detach();
                         }

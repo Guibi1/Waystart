@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use gpui::{rgb, Rgba};
+use gpui::{Rgba, rgb};
 
 pub static PALETTE: LazyLock<Palette> = LazyLock::new(Palette::default);
 

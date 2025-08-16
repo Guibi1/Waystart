@@ -1,4 +1,4 @@
-use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter};
+use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -49,7 +49,9 @@ impl DesktopEntry {
             Err(e) => {
                 eprintln!("Failed to launch {}: {}.", self.name, e);
                 if self.open_in_terminal {
-                    eprintln!("Please ensure that the $TERMINAL env is correct, or override it in the config.");
+                    eprintln!(
+                        "Please ensure that the $TERMINAL env is correct, or override it in the config."
+                    );
                 }
             }
         }
