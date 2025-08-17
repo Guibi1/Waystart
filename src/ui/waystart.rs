@@ -1,14 +1,13 @@
-use std::rc::Rc;
-
 use gpui::prelude::FluentBuilder;
 use gpui::{
     App, AppContext, Context, Entity, FocusHandle, Focusable, ImageSource, InteractiveElement,
-    IntoElement, KeyBinding, ObjectFit, ParentElement, Render, Resource,
-    StatefulInteractiveElement, Styled, StyledImage, Window, actions, div, img, uniform_list,
+    IntoElement, KeyBinding, ObjectFit, ParentElement, Render, ScrollStrategy,
+    StatefulInteractiveElement, Styled, StyledImage, UniformListScrollHandle, Window, actions, div,
+    img, uniform_list,
 };
 
 use crate::config::Config;
-use crate::desktop_entry;
+use crate::entries::SearchEntries;
 use crate::ui::PowerOptions;
 use crate::ui::elements::{Separator, Shortcut, TextInput};
 
@@ -28,38 +27,44 @@ pub(super) fn init(cx: &mut App) {
 
 pub struct Waystart {
     focus_handle: FocusHandle,
-    desktop_entries: Vec<Rc<desktop_entry::DesktopEntry>>,
+    entries: SearchEntries,
+    list_scroll_handle: UniformListScrollHandle,
     search_bar: Entity<TextInput>,
     selected: usize,
 }
 
 impl Waystart {
-    pub fn new(desktop_entries: Vec<desktop_entry::DesktopEntry>, cx: &mut Context<Self>) -> Self {
+    pub fn new(cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
+        let search_bar = cx.new(|_| {
+            TextInput::new(focus_handle.clone()).placeholder("Search for apps and commands...")
+        });
+
+        cx.observe(&search_bar, |this, _, cx| this.filter_results(cx))
+            .detach();
+        cx.observe_global::<SearchEntries>(|this, cx| this.filter_results(cx))
+            .detach();
+
         Self {
-            desktop_entries: desktop_entries.into_iter().map(Rc::new).collect(),
-            search_bar: cx.new(|_| TextInput::new(focus_handle.clone()).placeholder("Search")),
             focus_handle,
+            entries: cx.global::<SearchEntries>().clone(),
+            list_scroll_handle: UniformListScrollHandle::new(),
+            search_bar,
             selected: 0,
         }
+    }
+
+    fn filter_results(&mut self, cx: &mut Context<Self>) {
+        let search_term = self.search_bar.read(cx).content().to_lowercase();
+        self.entries = cx.global::<SearchEntries>().filtered(&search_term);
+        self.selected = 0;
+        cx.notify();
     }
 }
 
 impl Render for Waystart {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let config = cx.global::<Config>();
-        let search_term = self.search_bar.read(cx).value().to_lowercase();
-        let entries = self
-            .desktop_entries
-            .iter()
-            .filter(|entry| entry.name.to_lowercase().contains(&search_term))
-            .cloned()
-            .collect::<Vec<_>>();
-        let entries_count = entries.len();
-
-        if self.selected >= entries_count {
-            self.selected = entries_count.saturating_sub(1);
-        }
 
         div()
             .size_full()
@@ -69,33 +74,36 @@ impl Render for Waystart {
             .bg(config.background)
             .border_color(config.border)
             .border_1()
+            .rounded_lg()
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
             .on_action(cx.listener(move |this, _: &SelectPrev, _, cx| {
-                this.selected = if this.selected == 0 {
-                    entries_count.saturating_sub(1)
+                if this.selected == 0 {
+                    this.selected = this.entries.len().saturating_sub(1);
                 } else {
-                    this.selected.saturating_sub(1)
+                    this.selected = this.selected.saturating_sub(1);
                 };
+                this.list_scroll_handle
+                    .scroll_to_item(this.selected, ScrollStrategy::Top);
                 cx.notify();
             }))
             .on_action(cx.listener(move |this, _: &SelectNext, _, cx| {
-                this.selected = if this.selected == entries_count.saturating_sub(1) {
-                    0
+                if this.selected + 1 == this.entries.len() {
+                    this.selected = 0;
                 } else {
-                    this.selected + 1
+                    this.selected += 1;
                 };
+                this.list_scroll_handle
+                    .scroll_to_item(this.selected, ScrollStrategy::Top);
                 cx.notify();
             }))
-            .on_action({
-                let entry = entries.get(self.selected).cloned();
-                move |_: &OpenProgram, _, cx| {
-                    if let Some(entry) = &entry {
-                        entry.open(cx)
-                    }
+            .on_action(cx.listener(move |this, _: &OpenProgram, _, cx| {
+                let entry = this.entries.get(this.selected).cloned();
+                if let Some(entry) = &entry {
+                    entry.open(cx)
                 }
-            })
+            }))
             .child(self.search_bar.clone())
             .child(Separator::new())
             .child(
@@ -109,18 +117,16 @@ impl Render for Waystart {
                     .child(
                         uniform_list(
                             "entry_list",
-                            entries_count,
+                            self.entries.len(),
                             cx.processor(move |this, range: std::ops::Range<usize>, _, cx| {
                                 let config = cx.global::<Config>();
-                                entries
-                                    .iter()
-                                    .cloned()
-                                    .enumerate()
-                                    .skip(range.start)
-                                    .take(range.end - range.start)
-                                    .map(|(i, entry)| {
+
+                                range
+                                    .map(|i| {
+                                        let entry = this.entries.get(i).unwrap().clone();
+
                                         div()
-                                            .id(entry.name.clone())
+                                            .id(entry.name().clone())
                                             .w_full()
                                             .px_4()
                                             .py_1p5()
@@ -128,37 +134,38 @@ impl Render for Waystart {
                                             .items_center()
                                             .gap_4()
                                             .rounded_lg()
-                                            .when_some(entry.icon.as_ref(), |this, icon| {
+                                            .when_some(entry.icon(), |this, icon| {
                                                 this.child(
-                                                    img(ImageSource::Resource(Resource::Path(
-                                                        icon.clone(),
-                                                    )))
-                                                    .size_4()
-                                                    .object_fit(ObjectFit::Contain),
+                                                    img(ImageSource::Resource(icon.clone()))
+                                                        .size_4()
+                                                        .object_fit(ObjectFit::Contain),
                                                 )
                                             })
-                                            .child(entry.name.clone())
+                                            .child(entry.name().clone())
                                             .when(i == this.selected, |this| {
                                                 this.bg(config.muted).when_some(
-                                                    entry.description.clone(),
+                                                    entry.description(),
                                                     |this, description| {
                                                         this.child(
                                                             div()
-                                                                .text_sm()
                                                                 .text_color(config.muted_foreground)
-                                                                .child(description),
+                                                                .child(description.clone()),
                                                         )
                                                     },
                                                 )
                                             })
-                                            .on_mouse_move(
-                                                cx.listener(move |this, _, _, _| this.selected = i),
-                                            )
+                                            .on_mouse_move(cx.listener(move |this, _, _, cx| {
+                                                if this.selected != i {
+                                                    this.selected = i;
+                                                    cx.notify();
+                                                }
+                                            }))
                                             .on_click(move |_, _, cx| entry.open(cx))
                                     })
                                     .collect()
                             }),
                         )
+                        .track_scroll(self.list_scroll_handle.clone())
                         .flex_grow()
                         .pb_2(),
                     ),

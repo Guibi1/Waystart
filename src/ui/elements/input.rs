@@ -81,7 +81,7 @@ impl TextInput {
         self
     }
 
-    pub fn value(&self) -> &SharedString {
+    pub fn content(&self) -> &SharedString {
         &self.content
     }
 
@@ -545,13 +545,16 @@ impl Element for TextElement {
         let (selection, cursor) = if selected_range.is_empty() {
             (
                 None,
-                Some(fill(
-                    Bounds::new(
-                        point(bounds.left() + cursor_pos, bounds.top() + px(2.)),
-                        size(px(1.), bounds.bottom() - bounds.top() - px(4.)),
-                    ),
-                    config.foreground,
-                )),
+                Some(
+                    fill(
+                        Bounds::new(
+                            point(bounds.left() + cursor_pos, bounds.top() + px(2.)),
+                            size(px(2.), bounds.bottom() - bounds.top() - px(8.)),
+                        ),
+                        config.muted_foreground,
+                    )
+                    .corner_radii(px(1.)),
+                ),
             )
         } else {
             (
@@ -644,6 +647,7 @@ impl Render for TextInput {
             .px_4()
             .py_3()
             .bg(config.background)
+            .text_lg()
             .child(TextElement {
                 input: cx.entity().clone(),
             })

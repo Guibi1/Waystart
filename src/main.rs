@@ -4,13 +4,14 @@ use gpui::{
 };
 
 use crate::config::Config;
+use crate::entries::SearchEntries;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
 use crate::ui::{CloseWaystart, Waystart};
 
 mod cli;
 mod config;
-mod desktop_entry;
+mod entries;
 mod ipc;
 mod ui;
 
@@ -45,13 +46,10 @@ fn main() {
 }
 
 fn start_app(daemonize: bool) {
-    let desktop_entries = desktop_entry::get_desktop_entries();
-    let application = Application::new();
-    let config = Config::load();
-
-    application.run(move |cx| {
+    Application::new().run(move |cx| {
         ui::init(cx);
-        cx.set_global(config);
+        cx.set_global(SearchEntries::load());
+        cx.set_global(Config::load());
         cx.on_action(move |_: &CloseWaystart, cx| {
             if daemonize {
                 cx.hide();
@@ -78,7 +76,7 @@ fn start_app(daemonize: bool) {
                     ..Default::default()
                 },
                 |window, cx| {
-                    let root = cx.new(|cx| Waystart::new(desktop_entries, cx));
+                    let root = cx.new(Waystart::new);
                     window.focus(&root.focus_handle(cx));
                     root
                 },

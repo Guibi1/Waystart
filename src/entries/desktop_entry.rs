@@ -1,11 +1,10 @@
 use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::Arc;
 
-use gpui::{App, SharedString};
+use gpui::{App, Resource, SharedString};
 
 use crate::ui::CloseWaystart;
 
@@ -13,7 +12,7 @@ use crate::ui::CloseWaystart;
 pub struct DesktopEntry {
     pub name: SharedString,
     pub description: Option<SharedString>,
-    pub icon: Option<Arc<Path>>,
+    pub icon: Option<Resource>,
     pub exec: Vec<String>,
     pub working_dir: Option<PathBuf>,
     pub open_in_terminal: bool,

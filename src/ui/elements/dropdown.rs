@@ -156,8 +156,10 @@ impl Render for DropdownContent {
                         this.bg(config.muted).text_color(config.muted_foreground)
                     })
                     .on_mouse_move(cx.listener(move |this, _, _, cx| {
-                        this.selected = i;
-                        cx.notify();
+                        if this.selected != i {
+                            this.selected = i;
+                            cx.notify();
+                        }
                     }))
                     .on_click({
                         let action = item.action.clone();
