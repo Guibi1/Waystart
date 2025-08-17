@@ -1,11 +1,9 @@
 use gpui::App;
 
-mod palette;
+pub mod elements;
 mod power_options;
 mod waystart;
 
-pub mod elements;
-pub use palette::PALETTE;
 pub use power_options::PowerOptions;
 pub use waystart::{Close as CloseWaystart, Waystart};
 

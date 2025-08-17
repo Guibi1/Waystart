@@ -3,11 +3,13 @@ use gpui::{
     WindowKind, WindowOptions, px, size,
 };
 
+use crate::config::Config;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
 use crate::ui::{CloseWaystart, Waystart};
 
 mod cli;
+mod config;
 mod desktop_entry;
 mod ipc;
 mod ui;
@@ -45,9 +47,11 @@ fn main() {
 fn start_app(daemonize: bool) {
     let desktop_entries = desktop_entry::get_desktop_entries();
     let application = Application::new();
+    let config = Config::load();
 
     application.run(move |cx| {
         ui::init(cx);
+        cx.set_global(config);
         cx.on_action(move |_: &CloseWaystart, cx| {
             if daemonize {
                 cx.hide();

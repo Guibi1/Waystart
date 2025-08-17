@@ -1,8 +1,8 @@
 use smol::io::{AsyncBufReadExt, BufReader};
 use smol::net::unix::{UnixListener, UnixStream};
+use smol::stream::StreamExt;
 
 use gpui::{AppContext, AsyncApp, WindowHandle};
-use smol::stream::StreamExt;
 
 use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
 use crate::ui::Waystart;

@@ -4,9 +4,9 @@ use gpui::{
     App, Corner, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Window, div,
 };
 
+use crate::config::Config;
 use crate::ui::CloseWaystart;
 use crate::ui::elements::dropdown::{Dropdown, DropdownContent};
-use crate::ui::palette::PALETTE;
 
 #[derive(IntoElement)]
 pub struct PowerOptions {}
@@ -18,7 +18,9 @@ impl PowerOptions {
 }
 
 impl RenderOnce for PowerOptions {
-    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let config = cx.global::<Config>();
+
         Dropdown::new("power-options")
             .anchor(Corner::TopRight)
             .trigger(
@@ -28,9 +30,9 @@ impl RenderOnce for PowerOptions {
                     .items_center()
                     .justify_center()
                     .text_lg()
-                    .text_color(PALETTE.foreground)
+                    .text_color(config.foreground)
                     .rounded_lg()
-                    .hover(|style| style.bg(PALETTE.muted).text_color(PALETTE.muted_foreground))
+                    .hover(|style| style.bg(config.muted).text_color(config.muted_foreground))
                     .child("⏻"),
             )
             .content(|cx| {

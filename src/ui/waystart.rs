@@ -7,9 +7,10 @@ use gpui::{
     StatefulInteractiveElement, Styled, StyledImage, Window, actions, div, img, uniform_list,
 };
 
+use crate::config::Config;
 use crate::desktop_entry;
+use crate::ui::PowerOptions;
 use crate::ui::elements::{Separator, Shortcut, TextInput};
-use crate::ui::{PALETTE, PowerOptions};
 
 actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Close]);
 const CONTEXT: &str = "Waystart";
@@ -46,6 +47,7 @@ impl Waystart {
 
 impl Render for Waystart {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let config = cx.global::<Config>();
         let search_term = self.search_bar.read(cx).value().to_lowercase();
         let entries = self
             .desktop_entries
@@ -63,9 +65,9 @@ impl Render for Waystart {
             .size_full()
             .flex()
             .flex_col()
-            .text_color(PALETTE.foreground)
-            .bg(PALETTE.background)
-            .border_color(PALETTE.border)
+            .text_color(config.foreground)
+            .bg(config.background)
+            .border_color(config.border)
             .border_1()
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
@@ -103,12 +105,13 @@ impl Render for Waystart {
                     .flex_col()
                     .gap_1()
                     .px_2()
-                    .child(div().px_2().text_color(PALETTE.muted).child("Results"))
+                    .child(div().px_2().text_color(config.muted).child("Results"))
                     .child(
                         uniform_list(
                             "entry_list",
                             entries_count,
                             cx.processor(move |this, range: std::ops::Range<usize>, _, cx| {
+                                let config = cx.global::<Config>();
                                 entries
                                     .iter()
                                     .cloned()
@@ -136,15 +139,13 @@ impl Render for Waystart {
                                             })
                                             .child(entry.name.clone())
                                             .when(i == this.selected, |this| {
-                                                this.bg(PALETTE.muted).when_some(
+                                                this.bg(config.muted).when_some(
                                                     entry.description.clone(),
                                                     |this, description| {
                                                         this.child(
                                                             div()
                                                                 .text_sm()
-                                                                .text_color(
-                                                                    PALETTE.muted_foreground,
-                                                                )
+                                                                .text_color(config.muted_foreground)
                                                                 .child(description),
                                                         )
                                                     },

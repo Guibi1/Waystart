@@ -9,7 +9,7 @@ use gpui::{
 };
 use unicode_segmentation::*;
 
-use crate::ui::PALETTE;
+use crate::config::Config;
 
 actions!(
     text_input,
@@ -477,6 +477,8 @@ impl Element for TextElement {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
+        let config = cx.global::<Config>();
+
         let input = self.input.read(cx);
         let content = input.content.clone();
         let selected_range = input.selected_range.clone();
@@ -484,7 +486,7 @@ impl Element for TextElement {
         let style = window.text_style();
 
         let (display_text, text_color) = if content.is_empty() {
-            (input.placeholder.clone(), PALETTE.muted.into())
+            (input.placeholder.clone(), config.muted.into())
         } else {
             (content.clone(), style.color)
         };
@@ -548,7 +550,7 @@ impl Element for TextElement {
                         point(bounds.left() + cursor_pos, bounds.top() + px(2.)),
                         size(px(1.), bounds.bottom() - bounds.top() - px(4.)),
                     ),
-                    PALETTE.foreground,
+                    config.foreground,
                 )),
             )
         } else {
@@ -564,7 +566,7 @@ impl Element for TextElement {
                             bounds.bottom(),
                         ),
                     ),
-                    PALETTE.muted,
+                    config.muted,
                 )),
                 None,
             )
@@ -615,6 +617,8 @@ impl Element for TextElement {
 
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let config = cx.global::<Config>();
+
         div()
             .flex()
             .cursor(CursorStyle::IBeam)
@@ -639,7 +643,7 @@ impl Render for TextInput {
             .on_mouse_move(cx.listener(Self::on_mouse_move))
             .px_4()
             .py_3()
-            .bg(PALETTE.background)
+            .bg(config.background)
             .child(TextElement {
                 input: cx.entity().clone(),
             })

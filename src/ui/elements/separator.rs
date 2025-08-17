@@ -1,6 +1,6 @@
 use gpui::{App, IntoElement, RenderOnce, Styled, Window, div, px};
 
-use crate::ui::PALETTE;
+use crate::config::Config;
 
 #[derive(IntoElement)]
 pub struct Separator {}
@@ -12,7 +12,9 @@ impl Separator {
 }
 
 impl RenderOnce for Separator {
-    fn render(self, _window: &mut Window, _app: &mut App) -> impl IntoElement {
-        div().w_full().h(px(1.)).bg(PALETTE.muted)
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let config = cx.global::<Config>();
+
+        div().w_full().h(px(1.)).bg(config.muted)
     }
 }

@@ -2,15 +2,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Bounds, Context, Corner, DismissEvent, DispatchPhase, Element, ElementId,
-    Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox, InteractiveElement as _,
-    IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement,
-    Pixels, Refineable, Render, Style, StyleRefinement, Styled, Window, actions, anchored,
+    AnyElement, App, AppContext, Bounds, Context, Corner, CursorStyle, DismissEvent, DispatchPhase,
+    Element, ElementId, Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox,
+    InteractiveElement as _, IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton,
+    MouseDownEvent, ParentElement, Pixels, Refineable, Render, SharedString,
+    StatefulInteractiveElement, Style, StyleRefinement, Styled, Window, actions, anchored,
     deferred, div, prelude::FluentBuilder as _, px,
 };
-use gpui::{AppContext, CursorStyle, SharedString, StatefulInteractiveElement};
 
-use crate::ui::PALETTE;
+use crate::config::Config;
 
 actions!(dropdown, [SelectPrev, SelectNext, Confirm, Cancel]);
 const CONTEXT: &str = "Dropdown";
@@ -99,6 +99,8 @@ impl Styled for DropdownContent {
 
 impl Render for DropdownContent {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let config = cx.global::<Config>();
+
         div()
             .track_focus(&self.focus_handle)
             .key_context(CONTEXT)
@@ -106,9 +108,9 @@ impl Render for DropdownContent {
             .flex()
             .flex_col()
             .p_1()
-            .text_color(PALETTE.foreground)
-            .bg(PALETTE.background)
-            .border_color(PALETTE.accent)
+            .text_color(config.foreground)
+            .bg(config.background)
+            .border_color(config.accent)
             .border_1()
             .rounded_md()
             .overflow_hidden()
@@ -151,7 +153,7 @@ impl Render for DropdownContent {
                         this
                     })
                     .when(self.selected == i, |this| {
-                        this.bg(PALETTE.muted).text_color(PALETTE.muted_foreground)
+                        this.bg(config.muted).text_color(config.muted_foreground)
                     })
                     .on_mouse_move(cx.listener(move |this, _, _, cx| {
                         this.selected = i;
