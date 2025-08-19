@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use gpui::{App, Global, Resource, SharedString};
+use gpui::{Global, Resource, SharedString};
 
 use crate::entries::desktop_entry::DesktopEntry;
 
@@ -31,9 +31,9 @@ impl Entry {
         }
     }
 
-    pub fn open(&self, cx: &mut App) {
+    pub fn open(&self) -> bool {
         match self {
-            Entry::Application(entry) => entry.open(cx),
+            Entry::Application(entry) => entry.open(),
         }
     }
 }

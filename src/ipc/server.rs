@@ -2,7 +2,7 @@ use smol::io::{AsyncBufReadExt, BufReader};
 use smol::net::unix::{UnixListener, UnixStream};
 use smol::stream::StreamExt;
 
-use gpui::{AppContext, AsyncApp, WindowHandle};
+use gpui::{AsyncApp, WindowHandle};
 
 use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
 use crate::ui::Waystart;
@@ -55,7 +55,8 @@ impl SocketServer {
 
         while let Some(Ok(message)) = lines.next().await {
             if let Err(e) = match message.as_bytes() {
-                MESSAGE_SHOW => cx.update_window(window.into(), |_, window, _| {
+                MESSAGE_SHOW => window.update(cx, |waystart, window, cx| {
+                    waystart.reset_search(cx);
                     window.activate_window();
                 }),
                 MESSAGE_HIDE => cx.update(|cx| cx.hide()),

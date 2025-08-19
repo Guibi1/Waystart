@@ -54,6 +54,12 @@ impl Waystart {
         }
     }
 
+    pub fn reset_search(&mut self, cx: &mut Context<Self>) {
+        self.search_bar
+            .update(cx, |search_bar, _| search_bar.reset());
+        self.filter_results(cx);
+    }
+
     fn filter_results(&mut self, cx: &mut Context<Self>) {
         let search_term = self.search_bar.read(cx).content().to_lowercase();
         self.entries = cx.global::<SearchEntries>().filtered(&search_term);
@@ -99,10 +105,12 @@ impl Render for Waystart {
                     .scroll_to_item(this.selected, ScrollStrategy::Top);
                 cx.notify();
             }))
-            .on_action(cx.listener(move |this, _: &OpenProgram, _, cx| {
+            .on_action(cx.listener(move |this, _: &OpenProgram, window, cx| {
                 let entry = this.entries.get(this.selected).cloned();
                 if let Some(entry) = &entry {
-                    entry.open(cx)
+                    if entry.open() {
+                        window.dispatch_action(Box::new(Close {}), cx);
+                    }
                 }
             }))
             .child(self.search_bar.clone())
@@ -162,7 +170,11 @@ impl Render for Waystart {
                                                     cx.notify();
                                                 }
                                             }))
-                                            .on_click(move |_, _, cx| entry.open(cx))
+                                            .on_click(move |_, window, cx| {
+                                                if entry.open() {
+                                                    window.dispatch_action(Box::new(Close {}), cx);
+                                                }
+                                            })
                                     })
                                     .collect()
                             }),

@@ -4,9 +4,7 @@ use std::env;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-use gpui::{App, Resource, SharedString};
-
-use crate::ui::CloseWaystart;
+use gpui::{Resource, SharedString};
 
 #[derive(Debug)]
 pub struct DesktopEntry {
@@ -19,7 +17,7 @@ pub struct DesktopEntry {
 }
 
 impl DesktopEntry {
-    pub fn open(&self, cx: &mut App) {
+    pub fn open(&self) -> bool {
         let mut exec = self.exec.iter();
 
         let mut cmd = if self.open_in_terminal {
@@ -46,7 +44,7 @@ impl DesktopEntry {
         }
 
         match cmd.spawn() {
-            Ok(_) => cx.dispatch_action(&CloseWaystart {}),
+            Ok(_) => true,
             Err(e) => {
                 eprintln!("Failed to launch {}: {}.", self.name, e);
                 if self.open_in_terminal {
@@ -54,6 +52,7 @@ impl DesktopEntry {
                         "Please ensure that the $TERMINAL env is correct, or override it in the config."
                     );
                 }
+                false
             }
         }
     }
