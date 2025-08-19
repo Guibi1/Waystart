@@ -1,10 +1,12 @@
 use std::{env, path::PathBuf};
 
-use gpui::{Global, Rgba, rgb};
+use gpui::{Global, Rgba, SharedString, rgb};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
+    pub font_family: SharedString,
+
     pub background: Rgba,
     pub foreground: Rgba,
     pub border: Rgba,
@@ -17,6 +19,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            font_family: SharedString::from("Cascadia Code PL"),
+
             background: rgb(0x1e1e2e),
             foreground: rgb(0xcdd6f4),
             border: rgb(0x45475a),

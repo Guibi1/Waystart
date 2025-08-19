@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, AppContext, Bounds, Context, Corner, CursorStyle, DismissEvent, DispatchPhase,
+    AnyElement, App, AppContext, Bounds, Context, Corner, DismissEvent, DispatchPhase,
     Element, ElementId, Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton,
     MouseDownEvent, ParentElement, Pixels, Refineable, Render, SharedString,
@@ -147,7 +147,7 @@ impl Render for DropdownContent {
                     .px_2()
                     .border_1()
                     .rounded_sm()
-                    .cursor(CursorStyle::PointingHand)
+                    .cursor_pointer()
                     .map(|mut this| {
                         this.style().refine(&self.item_style);
                         this

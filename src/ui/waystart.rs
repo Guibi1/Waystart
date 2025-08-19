@@ -71,6 +71,7 @@ impl Render for Waystart {
             .flex()
             .flex_col()
             .text_color(config.foreground)
+            .font_family(config.font_family.clone())
             .bg(config.background)
             .border_color(config.border)
             .border_1()
@@ -129,7 +130,8 @@ impl Render for Waystart {
                                             .id(entry.name().clone())
                                             .w_full()
                                             .px_4()
-                                            .py_1p5()
+                                            .py_2()
+                                            .h_12()
                                             .flex()
                                             .items_center()
                                             .gap_4()
@@ -137,7 +139,7 @@ impl Render for Waystart {
                                             .when_some(entry.icon(), |this, icon| {
                                                 this.child(
                                                     img(ImageSource::Resource(icon.clone()))
-                                                        .size_4()
+                                                        .size_8()
                                                         .object_fit(ObjectFit::Contain),
                                                 )
                                             })

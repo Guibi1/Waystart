@@ -74,7 +74,7 @@ pub fn get_desktop_entries() -> Vec<DesktopEntry> {
                 description: entry.comment(&locales).map(|c| c.into_owned().into()),
                 icon: entry
                     .icon()
-                    .and_then(|i| lookup(i).with_cache().with_size(16).find())
+                    .and_then(|i| lookup(i).with_cache().with_size(32).find())
                     .map(|i| i.into()),
                 exec: entry.parse_exec_with_uris(&[], &locales).ok()?,
                 working_dir: entry.path().and_then(|entry| entry.parse().ok()),

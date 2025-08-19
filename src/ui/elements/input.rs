@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use gpui::{
-    App, Bounds, ClipboardItem, Context, CursorStyle, ElementId, ElementInputHandler, Entity,
+    App, Bounds, ClipboardItem, Context, ElementId, ElementInputHandler, Entity,
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, KeyBinding, LayoutId, MouseButton,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, ShapedLine,
     SharedString, Style, TextRun, UTF16Selection, UnderlineStyle, Window, actions, div, fill,
@@ -624,7 +624,11 @@ impl Render for TextInput {
 
         div()
             .flex()
-            .cursor(CursorStyle::IBeam)
+            .px_4()
+            .py_3()
+            .bg(config.background)
+            .text_lg()
+            .cursor_text()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
             .on_action(cx.listener(Self::backspace))
@@ -644,10 +648,6 @@ impl Render for TextInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
             .on_mouse_move(cx.listener(Self::on_mouse_move))
-            .px_4()
-            .py_3()
-            .bg(config.background)
-            .text_lg()
             .child(TextElement {
                 input: cx.entity().clone(),
             })
