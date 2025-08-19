@@ -2,8 +2,9 @@ use smol::io::{AsyncBufReadExt, BufReader};
 use smol::net::unix::{UnixListener, UnixStream};
 use smol::stream::StreamExt;
 
-use gpui::{AsyncApp, WindowHandle};
+use gpui::{AsyncApp, BorrowAppContext, WindowHandle};
 
+use crate::entries::SearchEntries;
 use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
 use crate::ui::Waystart;
 
@@ -56,6 +57,7 @@ impl SocketServer {
         while let Some(Ok(message)) = lines.next().await {
             if let Err(e) = match message.as_bytes() {
                 MESSAGE_SHOW => window.update(cx, |waystart, window, cx| {
+                    cx.update_global(|entries: &mut SearchEntries, _| entries.sort_by_frequency());
                     waystart.reset_search(cx);
                     window.activate_window();
                 }),

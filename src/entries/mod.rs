@@ -1,5 +1,5 @@
-use std::ops::Deref;
 use std::rc::Rc;
+use std::{ops::Deref, time::Instant};
 
 use gpui::{Global, Resource, SharedString};
 
@@ -31,6 +31,29 @@ impl Entry {
         }
     }
 
+    pub fn score(&self) -> u32 {
+        let Some((score, last_accessed)) = (match self {
+            Entry::Application(entry) => entry.frequency.get(),
+        }) else {
+            return 0;
+        };
+
+        let time_passed = Instant::now().duration_since(last_accessed);
+
+        if time_passed.as_secs() < 60 * 60 {
+            // One hour
+            score * 4
+        } else if time_passed.as_secs() < 60 * 60 * 24 {
+            // One day
+            score * 2
+        } else if time_passed.as_secs() < 60 * 60 * 24 * 7 {
+            // One week
+            score / 2
+        } else {
+            score / 4
+        }
+    }
+
     pub fn open(&self) -> bool {
         match self {
             Entry::Application(entry) => entry.open(),
@@ -51,6 +74,10 @@ impl SearchEntries {
                 .map(Entry::Application)
                 .collect(),
         )
+    }
+
+    pub fn sort_by_frequency(&mut self) {
+        self.0.sort_by(|a, b| b.score().cmp(&a.score()));
     }
 
     pub fn filtered(&self, search_term: &str) -> Self {

@@ -1,8 +1,10 @@
 use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
+use std::cell::Cell;
 use std::env;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::time::Instant;
 
 use gpui::{Resource, SharedString};
 
@@ -11,14 +13,27 @@ pub struct DesktopEntry {
     pub name: SharedString,
     pub description: Option<SharedString>,
     pub icon: Option<Resource>,
-    pub exec: Vec<String>,
-    pub working_dir: Option<PathBuf>,
-    pub open_in_terminal: bool,
+    exec: Vec<String>,
+    working_dir: Option<PathBuf>,
+    open_in_terminal: bool,
+
+    pub frequency: Cell<Option<(u32, Instant)>>,
 }
 
 impl DesktopEntry {
     pub fn open(&self) -> bool {
-        let mut exec = self.exec.iter();
+        self.frequency.set(Some((
+            self.frequency
+                .get()
+                .map(|(score, _)| score + 1)
+                .unwrap_or(1),
+            Instant::now(),
+        )));
+
+        let [exec, args @ ..] = self.exec.as_slice() else {
+            eprintln!("Exec command was empty.");
+            return false;
+        };
 
         let mut cmd = if self.open_in_terminal {
             let terminal = env::var_os("TERMINAL")
@@ -31,10 +46,10 @@ impl DesktopEntry {
             cmd.arg("-e");
             cmd
         } else {
-            Command::new(exec.next().unwrap())
+            Command::new(exec)
         };
 
-        cmd.args(exec);
+        cmd.args(args);
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
 
         if let Some(cwd) = &self.working_dir {
@@ -78,6 +93,7 @@ pub fn get_desktop_entries() -> Vec<DesktopEntry> {
                 exec: entry.parse_exec_with_uris(&[], &locales).ok()?,
                 working_dir: entry.path().and_then(|entry| entry.parse().ok()),
                 open_in_terminal: entry.terminal(),
+                frequency: Cell::new(None),
             })
         })
         .collect()
