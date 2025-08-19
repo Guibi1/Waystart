@@ -107,10 +107,10 @@ impl Render for Waystart {
             }))
             .on_action(cx.listener(move |this, _: &OpenProgram, window, cx| {
                 let entry = this.entries.get(this.selected).cloned();
-                if let Some(entry) = &entry {
-                    if entry.open() {
-                        window.dispatch_action(Box::new(Close {}), cx);
-                    }
+                if let Some(entry) = &entry
+                    && entry.open()
+                {
+                    window.dispatch_action(Box::new(Close {}), cx);
                 }
             }))
             .child(self.search_bar.clone())

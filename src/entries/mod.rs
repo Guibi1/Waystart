@@ -77,7 +77,7 @@ impl SearchEntries {
     }
 
     pub fn sort_by_frequency(&mut self) {
-        self.0.sort_by(|a, b| b.score().cmp(&a.score()));
+        self.0.sort_by_key(|e| e.score());
     }
 
     pub fn filtered(&self, search_term: &str) -> Self {

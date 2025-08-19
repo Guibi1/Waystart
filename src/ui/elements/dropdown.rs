@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, AppContext, Bounds, Context, Corner, DismissEvent, DispatchPhase,
-    Element, ElementId, Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox,
+    AnyElement, App, AppContext, Bounds, Context, Corner, DismissEvent, DispatchPhase, Element,
+    ElementId, Entity, EventEmitter, FocusHandle, Focusable, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton,
     MouseDownEvent, ParentElement, Pixels, Refineable, Render, SharedString,
     StatefulInteractiveElement, Style, StyleRefinement, Styled, Window, actions, anchored,
