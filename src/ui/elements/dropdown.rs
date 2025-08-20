@@ -11,6 +11,7 @@ use gpui::{
 };
 
 use crate::config::Config;
+use crate::ui::elements::Icon;
 
 actions!(dropdown, [SelectPrev, SelectNext, Confirm, Cancel]);
 const CONTEXT: &str = "Dropdown";
@@ -51,6 +52,7 @@ impl DropdownContent {
         mut self,
         id: impl Into<ElementId>,
         label: impl Into<SharedString>,
+        icon: Option<Icon>,
         action: A,
     ) -> Self
     where
@@ -59,6 +61,7 @@ impl DropdownContent {
         self.items.push(DropdownItem {
             id: id.into(),
             label: label.into(),
+            icon,
             action: Rc::new(action),
             separate: false,
         });
@@ -144,6 +147,9 @@ impl Render for DropdownContent {
             .children(self.items.iter().enumerate().map(|(i, item)| {
                 div()
                     .id(item.id.clone())
+                    .flex()
+                    .items_center()
+                    .gap_2()
                     .px_2()
                     .border_1()
                     .rounded_sm()
@@ -168,6 +174,9 @@ impl Render for DropdownContent {
                             cx.emit(DismissEvent);
                         })
                     })
+                    .when_some(item.icon, |this, icon| {
+                        this.child(icon.build(config.foreground))
+                    })
                     .child(item.label.clone())
             }))
     }
@@ -176,6 +185,7 @@ impl Render for DropdownContent {
 struct DropdownItem {
     id: ElementId,
     label: SharedString,
+    icon: Option<Icon>,
     action: Rc<ItemAction>,
     separate: bool,
 }

@@ -1,0 +1,47 @@
+use gpui::{App, Hsla, IntoElement, RenderOnce, SharedString, Styled, Window, svg};
+
+#[derive(Clone, Copy)]
+pub enum Icon {
+    Lock,
+    Power,
+    Restart,
+    Sleep,
+}
+
+impl Icon {
+    pub fn build(&self, color: impl Into<Hsla>) -> IconElement {
+        let path = match self {
+            Icon::Lock => "lock.svg",
+            Icon::Power => "power.svg",
+            Icon::Restart => "restart.svg",
+            Icon::Sleep => "sleep.svg",
+        };
+
+        IconElement::new(path.into(), color)
+    }
+}
+
+#[derive(IntoElement)]
+pub struct IconElement {
+    path: SharedString,
+    color: Hsla,
+}
+
+impl IconElement {
+    pub fn new(path: SharedString, color: impl Into<Hsla>) -> IconElement {
+        IconElement {
+            path,
+            color: color.into(),
+        }
+    }
+}
+
+impl RenderOnce for IconElement {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        svg()
+            .flex_none()
+            .size_4()
+            .text_color(self.color)
+            .path(self.path)
+    }
+}

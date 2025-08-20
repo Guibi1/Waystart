@@ -6,7 +6,7 @@ use gpui::{
 
 use crate::config::Config;
 use crate::ui::CloseWaystart;
-use crate::ui::elements::dropdown::{Dropdown, DropdownContent};
+use crate::ui::elements::{Dropdown, DropdownContent, Icon};
 
 #[derive(IntoElement)]
 pub struct PowerOptions {}
@@ -33,20 +33,23 @@ impl RenderOnce for PowerOptions {
                     .text_color(config.foreground)
                     .rounded_lg()
                     .hover(|style| style.bg(config.muted).text_color(config.muted_foreground))
-                    .child("⏻"),
+                    .child(Icon::Power.build(config.foreground)),
             )
             .content(|cx| {
                 DropdownContent::new(cx)
                     .w_32()
-                    .item("power-option-lock", "Lock", |_, cx| {
-                        match Command::new("loginctl").arg("lock-session").spawn() {
+                    .item(
+                        "power-option-lock",
+                        "Lock",
+                        Some(Icon::Lock),
+                        |_, cx| match Command::new("loginctl").arg("lock-session").spawn() {
                             Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
                                 eprintln!("Failed to lock session: {}", e);
                             }
-                        }
-                    })
-                    .item("power-option-sleep", "Sleep", |_, cx| {
+                        },
+                    )
+                    .item("power-option-sleep", "Sleep", Some(Icon::Sleep), |_, cx| {
                         match Command::new("systemctl").arg("suspend").spawn() {
                             Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
@@ -57,6 +60,7 @@ impl RenderOnce for PowerOptions {
                     .item(
                         "power-option-shut-down",
                         "Shut down",
+                        Some(Icon::Power),
                         |_, cx| match Command::new("systemctl").arg("poweroff").spawn() {
                             Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {
@@ -67,6 +71,7 @@ impl RenderOnce for PowerOptions {
                     .item(
                         "power-option-restart",
                         "Restart",
+                        Some(Icon::Restart),
                         |_, cx| match Command::new("systemctl").arg("reboot").spawn() {
                             Ok(_) => cx.dispatch_action(&CloseWaystart {}),
                             Err(e) => {

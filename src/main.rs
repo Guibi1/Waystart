@@ -46,7 +46,7 @@ fn main() {
 }
 
 fn start_app(daemonize: bool) {
-    Application::new().run(move |cx| {
+    Application::new().with_assets(ui::Assets).run(move |cx| {
         ui::init(cx);
         cx.set_global(SearchEntries::load());
         cx.set_global(Config::load());
