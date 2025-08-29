@@ -46,46 +46,49 @@ fn main() {
 }
 
 fn start_app(daemonize: bool) {
-    Application::new().with_assets(ui::Assets).run(move |cx| {
-        ui::init(cx);
-        cx.set_global(SearchEntries::load());
-        cx.set_global(Config::load());
-        cx.on_action(move |_: &CloseWaystart, cx| {
+    Application::new()
+        .with_assets(ui::Assets)
+        .keep_running(daemonize)
+        .run(move |cx| {
+            ui::init(cx);
+            cx.set_global(SearchEntries::load());
+            cx.set_global(Config::load());
+            cx.on_action(move |_: &CloseWaystart, cx| {
+                if daemonize {
+                    cx.hide();
+                } else {
+                    cx.quit();
+                }
+            });
+
+            let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
+            let window = cx
+                .open_window(
+                    WindowOptions {
+                        kind: WindowKind::PopUp,
+                        is_movable: true,
+                        show: !daemonize,
+                        focus: !daemonize,
+                        window_bounds: Some(WindowBounds::Windowed(bounds)),
+                        window_decorations: Some(WindowDecorations::Client),
+                        titlebar: Some(TitlebarOptions {
+                            title: Some("Waystart".into()),
+                            appears_transparent: true,
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    },
+                    |window, cx| {
+                        let root = cx.new(Waystart::new);
+                        window.focus(&root.focus_handle(cx));
+                        root
+                    },
+                )
+                .unwrap();
+
             if daemonize {
-                cx.hide();
-            } else {
-                cx.quit();
+                let server = SocketServer::new(cx.to_async(), window);
+                server.listen();
             }
         });
-
-        let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
-        let window = cx
-            .open_window(
-                WindowOptions {
-                    kind: WindowKind::PopUp,
-                    is_movable: true,
-                    show: !daemonize,
-                    focus: !daemonize,
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
-                    window_decorations: Some(WindowDecorations::Client),
-                    titlebar: Some(TitlebarOptions {
-                        title: Some("Waystart".into()),
-                        appears_transparent: true,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                |window, cx| {
-                    let root = cx.new(Waystart::new);
-                    window.focus(&root.focus_handle(cx));
-                    root
-                },
-            )
-            .unwrap();
-
-        if daemonize {
-            let server = SocketServer::new(cx.to_async(), window);
-            server.listen();
-        }
-    });
 }

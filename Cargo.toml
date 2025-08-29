@@ -6,10 +6,7 @@ edition = "2024"
 [dependencies]
 freedesktop-desktop-entry = { version = "0.7.13", default-features = false }
 freedesktop-icons = "0.4.0"
-gpui = { git = "https://github.com/zed-industries/zed", default-features = false, features = [
-    "wayland",
-    "http_client",
-] }
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false, features = ["wayland" ] }
 rust-embed = "8.7.2"
 serde = { version = "1.0.219", default-features = false, features = ["derive"] }
 smol = "2.0.2"
@@ -19,3 +16,6 @@ toml = { version = "0.9.5", default-features = false, features = [
 ] }
 unicode-segmentation = "1.12.0"
 xflags = "0.3.2"
+
+[patch."https://github.com/zed-industries/zed"]
+gpui = { git = "https://github.com/guibi1/zed.git", branch = "patched" }
