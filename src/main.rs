@@ -1,6 +1,6 @@
 use gpui::{
     AppContext, Application, Bounds, Focusable, TitlebarOptions, WindowBounds, WindowDecorations,
-    WindowKind, WindowOptions, px, size,
+    WindowKind, WindowOptions, point, px, size,
 };
 
 use crate::config::Config;
@@ -61,7 +61,7 @@ fn start_app(daemonize: bool) {
                 }
             });
 
-            let bounds = Bounds::centered(None, size(px(800.), px(400.)), cx);
+            let bounds = Bounds::centered(None, size(px(800.), px(500.)), cx);
             let window = cx
                 .open_window(
                     WindowOptions {
@@ -74,7 +74,7 @@ fn start_app(daemonize: bool) {
                         titlebar: Some(TitlebarOptions {
                             title: Some("Waystart".into()),
                             appears_transparent: true,
-                            ..Default::default()
+                            traffic_light_position: Some(point(px(-100.0), px(0.0))),
                         }),
                         ..Default::default()
                     },

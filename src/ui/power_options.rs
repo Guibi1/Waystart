@@ -29,15 +29,13 @@ impl RenderOnce for PowerOptions {
                     .flex()
                     .items_center()
                     .justify_center()
-                    .text_lg()
-                    .text_color(config.foreground)
                     .rounded_lg()
-                    .hover(|style| style.bg(config.muted).text_color(config.muted_foreground))
+                    .hover(|style| style.bg(config.muted))
                     .child(Icon::Power.build(config.foreground)),
             )
             .content(|cx| {
                 DropdownContent::new(cx)
-                    .w_32()
+                    .w_40()
                     .item(
                         "power-option-lock",
                         "Lock",

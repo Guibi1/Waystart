@@ -39,10 +39,10 @@ pub(super) fn init(cx: &mut App) {
         KeyBinding::new("right", Right, Some(CONTEXT)),
         KeyBinding::new("shift-left", SelectLeft, Some(CONTEXT)),
         KeyBinding::new("shift-right", SelectRight, Some(CONTEXT)),
-        KeyBinding::new("ctrl-a", SelectAll, Some(CONTEXT)),
-        KeyBinding::new("ctrl-v", Paste, Some(CONTEXT)),
-        KeyBinding::new("ctrl-c", Copy, Some(CONTEXT)),
-        KeyBinding::new("ctrl-x", Cut, Some(CONTEXT)),
+        KeyBinding::new("secondary-a", SelectAll, Some(CONTEXT)),
+        KeyBinding::new("secondary-v", Paste, Some(CONTEXT)),
+        KeyBinding::new("secondary-c", Copy, Some(CONTEXT)),
+        KeyBinding::new("secondary-x", Cut, Some(CONTEXT)),
         KeyBinding::new("home", Home, Some(CONTEXT)),
         KeyBinding::new("end", End, Some(CONTEXT)),
         KeyBinding::new("escape", Clear, Some(CONTEXT)),
@@ -555,7 +555,7 @@ impl Element for TextElement {
                             point(bounds.left() + cursor_pos, bounds.top() + px(2.)),
                             size(px(2.), bounds.bottom() - bounds.top() - px(8.)),
                         ),
-                        config.muted_foreground,
+                        config.accent,
                     )
                     .corner_radii(px(1.)),
                 ),
@@ -630,6 +630,7 @@ impl Render for TextInput {
             .flex()
             .px_4()
             .py_3()
+            .flex_grow()
             .bg(config.background)
             .text_lg()
             .cursor_text()

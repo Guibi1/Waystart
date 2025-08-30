@@ -9,7 +9,7 @@ use gpui::{
 use crate::config::Config;
 use crate::entries::SearchEntries;
 use crate::ui::PowerOptions;
-use crate::ui::elements::{Separator, Shortcut, TextInput};
+use crate::ui::elements::{Icon, Separator, Shortcut, TextInput};
 
 actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Close]);
 const CONTEXT: &str = "Waystart";
@@ -76,9 +76,9 @@ impl Render for Waystart {
             .size_full()
             .flex()
             .flex_col()
+            .bg(config.background)
             .text_color(config.foreground)
             .font_family(config.font_family.clone())
-            .bg(config.background)
             .border_color(config.border)
             .border_1()
             .rounded_lg()
@@ -113,7 +113,15 @@ impl Render for Waystart {
                     window.dispatch_action(Box::new(Close {}), cx);
                 }
             }))
-            .child(self.search_bar.clone())
+            .child(
+                div()
+                    .h_16()
+                    .flex()
+                    .pl_6()
+                    .items_center()
+                    .child(Icon::Search.build(config.foreground))
+                    .child(self.search_bar.clone()),
+            )
             .child(Separator::new())
             .child(
                 div()
@@ -122,7 +130,13 @@ impl Render for Waystart {
                     .flex_col()
                     .gap_1()
                     .px_2()
-                    .child(div().px_2().text_color(config.muted).child("Results"))
+                    .child(
+                        div()
+                            .px_5()
+                            .py_1()
+                            .text_color(config.muted_foreground)
+                            .child("Results"),
+                    )
                     .child(
                         uniform_list(
                             "entry_list",
@@ -132,6 +146,7 @@ impl Render for Waystart {
 
                                 range
                                     .map(|i| {
+                                        let selected = i == this.selected;
                                         let entry = this.entries.get(i).unwrap().clone();
 
                                         div()
@@ -142,30 +157,34 @@ impl Render for Waystart {
                                             .h_12()
                                             .flex()
                                             .items_center()
-                                            .gap_4()
                                             .rounded_lg()
+                                            .when(selected, |this| this.bg(config.muted))
                                             .when_some(entry.icon(), |this, icon| {
                                                 this.child(
                                                     img(ImageSource::Resource(icon.clone()))
                                                         .size_8()
+                                                        .mr_4()
                                                         .object_fit(ObjectFit::Contain),
                                                 )
                                             })
                                             .child(entry.name().clone())
-                                            .when(i == this.selected, |this| {
-                                                this.bg(config.muted).when_some(
-                                                    entry.description(),
-                                                    |this, description| {
-                                                        this.child(
-                                                            div()
-                                                                .text_color(config.muted_foreground)
-                                                                .child(description.clone()),
-                                                        )
-                                                    },
-                                                )
-                                            })
+                                            .when_some(
+                                                selected.then_some(entry.description()).flatten(),
+                                                |this, description| {
+                                                    this.child(
+                                                        div()
+                                                            .flex()
+                                                            .text_color(config.muted_foreground)
+                                                            .when(selected, |this| {
+                                                                this.bg(config.muted)
+                                                            })
+                                                            .child(" — ")
+                                                            .child(description.clone()),
+                                                    )
+                                                },
+                                            )
                                             .on_mouse_move(cx.listener(move |this, _, _, cx| {
-                                                if this.selected != i {
+                                                if !selected {
                                                     this.selected = i;
                                                     cx.notify();
                                                 }
@@ -187,9 +206,10 @@ impl Render for Waystart {
             .child(Separator::new())
             .child(
                 div()
-                    .px_2()
-                    .py_1()
+                    .h_12()
                     .flex()
+                    .px_4()
+                    .items_center()
                     .gap_2()
                     .child(PowerOptions::new())
                     .child(

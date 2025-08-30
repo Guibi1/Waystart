@@ -5,6 +5,7 @@ pub enum Icon {
     Lock,
     Power,
     Restart,
+    Search,
     Sleep,
 }
 
@@ -14,6 +15,7 @@ impl Icon {
             Icon::Lock => "lock.svg",
             Icon::Power => "power.svg",
             Icon::Restart => "restart.svg",
+            Icon::Search => "search.svg",
             Icon::Sleep => "sleep.svg",
         };
 

@@ -25,7 +25,7 @@ impl Default for Config {
             foreground: rgb(0xcdd6f4),
             border: rgb(0x45475a),
             muted: rgb(0x313244),
-            muted_foreground: rgb(0xbac2de),
+            muted_foreground: rgb(0x6c7086),
             accent: rgb(0xcba6f7),
             accent_foreground: rgb(0x1e1e2e),
         }

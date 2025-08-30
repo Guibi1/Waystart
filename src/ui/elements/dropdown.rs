@@ -105,18 +105,17 @@ impl Render for DropdownContent {
         let config = cx.global::<Config>();
 
         div()
-            .track_focus(&self.focus_handle)
-            .key_context(CONTEXT)
-            .p_2()
             .flex()
             .flex_col()
             .p_1()
-            .text_color(config.foreground)
             .bg(config.background)
+            .text_color(config.foreground)
             .border_color(config.accent)
             .border_1()
             .rounded_md()
             .overflow_hidden()
+            .track_focus(&self.focus_handle)
+            .key_context(CONTEXT)
             .map(|mut this| {
                 this.style().refine(&self.style);
                 this
@@ -149,7 +148,7 @@ impl Render for DropdownContent {
                     .id(item.id.clone())
                     .flex()
                     .items_center()
-                    .gap_2()
+                    .gap_3()
                     .px_2()
                     .border_1()
                     .rounded_sm()
@@ -158,9 +157,7 @@ impl Render for DropdownContent {
                         this.style().refine(&self.item_style);
                         this
                     })
-                    .when(self.selected == i, |this| {
-                        this.bg(config.muted).text_color(config.muted_foreground)
-                    })
+                    .when(self.selected == i, |this| this.bg(config.muted))
                     .on_mouse_move(cx.listener(move |this, _, _, cx| {
                         if this.selected != i {
                             this.selected = i;
