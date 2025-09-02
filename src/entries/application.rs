@@ -1,35 +1,24 @@
-use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
+use freedesktop_desktop_entry::{DesktopEntry, Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
-use std::cell::Cell;
 use std::env;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::time::Instant;
 
 use gpui::{Resource, SharedString};
 
 #[derive(Debug)]
-pub struct DesktopEntry {
+pub struct Application {
+    pub id: String,
     pub name: SharedString,
     pub description: Option<SharedString>,
     pub icon: Option<Resource>,
     exec: Vec<String>,
     working_dir: Option<PathBuf>,
     open_in_terminal: bool,
-
-    pub frequency: Cell<Option<(u32, Instant)>>,
 }
 
-impl DesktopEntry {
+impl Application {
     pub fn open(&self) -> bool {
-        self.frequency.set(Some((
-            self.frequency
-                .get()
-                .map(|(score, _)| score + 1)
-                .unwrap_or(1),
-            Instant::now(),
-        )));
-
         let [exec, args @ ..] = self.exec.as_slice() else {
             eprintln!("Exec command was empty.");
             return false;
@@ -73,17 +62,18 @@ impl DesktopEntry {
     }
 }
 
-pub fn get_desktop_entries() -> Vec<DesktopEntry> {
+pub fn get_desktop_entries() -> Vec<Application> {
     let locales = get_languages_from_env();
 
     Iter::new(default_paths())
-        .flat_map(|path| freedesktop_desktop_entry::DesktopEntry::from_path(path, Some(&locales)))
+        .flat_map(|path| DesktopEntry::from_path(path, Some(&locales)))
         .filter_map(|entry| {
             if entry.no_display() || entry.hidden() {
                 return None;
             }
 
-            Some(DesktopEntry {
+            Some(Application {
+                id: entry.id().to_string(),
                 name: entry.name(&locales).map(|c| c.into_owned().into())?,
                 description: entry.comment(&locales).map(|c| c.into_owned().into()),
                 icon: entry
@@ -93,7 +83,6 @@ pub fn get_desktop_entries() -> Vec<DesktopEntry> {
                 exec: entry.parse_exec_with_uris(&[], &locales).ok()?,
                 working_dir: entry.path().and_then(|entry| entry.parse().ok()),
                 open_in_terminal: entry.terminal(),
-                frequency: Cell::new(None),
             })
         })
         .collect()

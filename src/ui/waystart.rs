@@ -7,7 +7,7 @@ use gpui::{
 };
 
 use crate::config::Config;
-use crate::entries::SearchEntries;
+use crate::entries::{Entry, SearchEntries};
 use crate::ui::PowerOptions;
 use crate::ui::elements::{Icon, Separator, Shortcut, TextInput};
 
@@ -27,7 +27,7 @@ pub(super) fn init(cx: &mut App) {
 
 pub struct Waystart {
     focus_handle: FocusHandle,
-    entries: SearchEntries,
+    entries: Vec<Entry>,
     list_scroll_handle: UniformListScrollHandle,
     search_bar: Entity<TextInput>,
     selected: usize,
@@ -47,7 +47,7 @@ impl Waystart {
 
         Self {
             focus_handle,
-            entries: cx.global::<SearchEntries>().clone(),
+            entries: cx.global::<SearchEntries>().filtered(""),
             list_scroll_handle: UniformListScrollHandle::new(),
             search_bar,
             selected: 0,
@@ -108,7 +108,7 @@ impl Render for Waystart {
             .on_action(cx.listener(move |this, _: &OpenProgram, window, cx| {
                 let entry = this.entries.get(this.selected).cloned();
                 if let Some(entry) = &entry
-                    && entry.open()
+                    && entry.open(cx)
                 {
                     window.dispatch_action(Box::new(Close {}), cx);
                 }
@@ -190,7 +190,7 @@ impl Render for Waystart {
                                                 }
                                             }))
                                             .on_click(move |_, window, cx| {
-                                                if entry.open() {
+                                                if entry.open(cx) {
                                                     window.dispatch_action(Box::new(Close {}), cx);
                                                 }
                                             })

@@ -1,4 +1,5 @@
-use std::{env, path::PathBuf};
+use std::env;
+use std::path::PathBuf;
 
 use gpui::{Global, Rgba, SharedString, rgb};
 use serde::Deserialize;
@@ -42,7 +43,7 @@ impl Config {
         }
     }
 
-    fn get_path() -> std::path::PathBuf {
+    fn get_path() -> PathBuf {
         match env::var("XDG_CONFIG_DIR") {
             Ok(config) => PathBuf::from(config).join("waystart.toml"),
             Err(_) => env::home_dir().unwrap().join(".config/waystart.toml"),
