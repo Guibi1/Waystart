@@ -1,22 +1,30 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use smol::io::{AsyncBufReadExt, BufReader};
 use smol::net::unix::{UnixListener, UnixStream};
 use smol::stream::StreamExt;
 
-use gpui::{AsyncApp, BorrowAppContext, WindowHandle};
+use gpui::{AsyncApp, Entity, WindowHandle};
 
-use crate::entries::SearchEntries;
-use crate::ipc::{MESSAGE_HIDE, MESSAGE_QUIT, MESSAGE_SHOW, SOCKET_PATH};
+use crate::ipc::*;
+use crate::open_window;
 use crate::ui::Waystart;
 
 #[derive(Clone)]
 pub struct SocketServer {
     app: AsyncApp,
-    window: WindowHandle<Waystart>,
+    waystart: Entity<Waystart>,
+    window: Rc<RefCell<Option<WindowHandle<Waystart>>>>,
 }
 
 impl SocketServer {
-    pub fn new(app: AsyncApp, window: WindowHandle<Waystart>) -> Self {
-        Self { app, window }
+    pub fn new(app: AsyncApp, waystart: Entity<Waystart>) -> Self {
+        Self {
+            app,
+            waystart,
+            window: Rc::new(RefCell::new(None)),
+        }
     }
 
     pub fn listen(&self) {
@@ -32,8 +40,10 @@ impl SocketServer {
                 loop {
                     match listener.accept().await {
                         Ok((stream, _)) => {
+                            let window = this.window.clone();
+                            let waystart = this.waystart.clone();
                             cx.spawn(async move |cx| {
-                                Self::handle_ipc_stream(stream, this.window, cx).await
+                                Self::handle_ipc_stream(stream, window, waystart, cx).await
                             })
                             .detach();
                         }
@@ -48,7 +58,8 @@ impl SocketServer {
 
     async fn handle_ipc_stream(
         stream: UnixStream,
-        window: WindowHandle<Waystart>,
+        window: Rc<RefCell<Option<WindowHandle<Waystart>>>>,
+        waystart: Entity<Waystart>,
         cx: &mut AsyncApp,
     ) {
         let reader = BufReader::new(stream);
@@ -56,12 +67,34 @@ impl SocketServer {
 
         while let Some(Ok(message)) = lines.next().await {
             if let Err(e) = match message.as_bytes() {
-                MESSAGE_SHOW => window.update(cx, |waystart, window, cx| {
-                    cx.update_global(|entries: &mut SearchEntries, _| entries.sort_by_frequency());
-                    waystart.reset_search(cx);
-                    window.activate_window();
+                MESSAGE_OPEN => cx.update(|cx| {
+                    let mut window = window.borrow_mut();
+                    if window.map(|w| w.is_active(cx).is_none()).unwrap_or(true) {
+                        *window = Some(open_window(cx, waystart.clone()));
+                    }
                 }),
-                MESSAGE_HIDE => cx.update(|cx| cx.hide()),
+                MESSAGE_CLOSE => cx.update(|cx| {
+                    let mut window = window.borrow_mut();
+                    if let Some(window) = window.take()
+                        && window.is_active(cx).is_some()
+                    {
+                        window
+                            .update(cx, |_, window, _| window.remove_window())
+                            .unwrap();
+                    }
+                }),
+                MESSAGE_TOGGLE => cx.update(|cx| {
+                    let mut window = window.borrow_mut();
+                    if let Some(window) = window.take()
+                        && window.is_active(cx).is_some()
+                    {
+                        window
+                            .update(cx, |_, window, _| window.remove_window())
+                            .unwrap();
+                    } else {
+                        *window = Some(open_window(cx, waystart.clone()));
+                    }
+                }),
                 MESSAGE_QUIT => cx.update(|cx| cx.quit()),
                 _ => {
                     eprintln!("Received unknown IPC message: {}", message);

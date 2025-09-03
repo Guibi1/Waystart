@@ -14,10 +14,13 @@ xflags! {
         }
 
         /// Open the Waystart window.
-        cmd show {}
+        cmd open {}
 
-        /// Hide the Waystart window.
-        cmd hide {}
+        /// Close the Waystart window.
+        cmd close {}
+
+        /// Open/close the Waystart window.
+        cmd toggle {}
     }
 }
 
@@ -33,8 +36,9 @@ pub struct Waystart {
 pub enum WaystartCmd {
     Standalone(Standalone),
     Daemon(Daemon),
-    Show(Show),
-    Hide(Hide),
+    Open(Open),
+    Close(Close),
+    Toggle(Toggle),
 }
 
 #[derive(Debug)]
@@ -46,10 +50,13 @@ pub struct Daemon {
 }
 
 #[derive(Debug)]
-pub struct Show;
+pub struct Open;
 
 #[derive(Debug)]
-pub struct Hide;
+pub struct Close;
+
+#[derive(Debug)]
+pub struct Toggle;
 
 impl Waystart {
     #[allow(dead_code)]

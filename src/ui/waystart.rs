@@ -85,6 +85,7 @@ impl Render for Waystart {
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
+            .on_action(|_: &Close, window, _| window.remove_window())
             .on_action(cx.listener(move |this, _: &SelectPrev, _, cx| {
                 if this.selected == 0 {
                     this.selected = this.entries.len().saturating_sub(1);
@@ -110,7 +111,7 @@ impl Render for Waystart {
                 if let Some(entry) = &entry
                     && entry.open(cx)
                 {
-                    window.dispatch_action(Box::new(Close {}), cx);
+                    window.remove_window();
                 }
             }))
             .child(
@@ -191,7 +192,7 @@ impl Render for Waystart {
                                             }))
                                             .on_click(move |_, window, cx| {
                                                 if entry.open(cx) {
-                                                    window.dispatch_action(Box::new(Close {}), cx);
+                                                    window.remove_window();
                                                 }
                                             })
                                     })
