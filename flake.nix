@@ -1,55 +1,59 @@
 {
   inputs = {
+    naersk.url = "github:nmattia/naersk/master";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    actions-nix.url = "github:nialov/actions.nix";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    inputs@{ nixpkgs, flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.actions-nix.flakeModules.default ];
-      systems = nixpkgs.lib.systems.flakeExposed;
-      perSystem =
-        {
-          pkgs,
-          system,
-          ...
-        }:
-        let
-          rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-          manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-        in
-        {
-          formatter = pkgs.nixfmt-rfc-style;
-          _module.args.pkgs = import nixpkgs {
-            inherit system;
-            overlays = [
-              (import inputs.rust-overlay)
-            ];
-          };
+    {
+      self,
+      nixpkgs,
+      utils,
+      naersk,
+      ...
+    }:
+    utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        naersk-lib = pkgs.callPackage naersk { };
+        libPath = with pkgs; lib.makeLibraryPath [ wayland vulkan-loader ];
+      in
+      {
+        defaultPackage = naersk-lib.buildPackage {
+          src = ./.;
+          doCheck = true;
+          pname = "waystart";
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          buildInputs = with pkgs; [
+            libxkbcommon
+          ];
+          postInstall = ''
+            wrapProgram "$out/bin/sixty-two" --prefix LD_LIBRARY_PATH : "${libPath}"
+          '';
+        };
 
-          devShells.default = pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [
-              rustToolchain.override
-              { extensions = [ "rust-src" ]; }
-              pkg-config
+        defaultApp = utils.lib.mkApp {
+          drv = self.defaultPackage."${system}";
+        };
+
+        devShell =
+          with pkgs;
+          mkShell {
+            buildInputs = [
+              cargo
+              rust-analyzer
+              rustc
+              rustfmt
+              tokei
               libxkbcommon
             ];
-          };
 
-          packages.default =
-            (pkgs.makeRustPlatform {
-              rustc = rustToolchain;
-              cargo = rustToolchain;
-            }).buildRustPackage
-              {
-                pname = manifest.name;
-                version = manifest.version;
-                cargoLock.lockFile = ./Cargo.lock;
-              };
-        };
-    };
+            RUST_SRC_PATH = rustPlatform.rustLibSrc;
+            LD_LIBRARY_PATH = libPath;
+            GIT_EXTERNAL_DIFF = "${difftastic}/bin/difft";
+          };
+      }
+    );
 }
