@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -75,11 +76,12 @@ impl SearchEntries {
     }
 
     pub fn sort_by_frequency(&mut self) {
-        self.entries
-            .sort_by_key(|e| match self.frequencies.get(e.id()) {
+        self.entries.sort_by_key(|e| {
+            Reverse(match self.frequencies.get(e.id()) {
                 Some(frequency) => frequency.score(),
                 None => 0,
-            });
+            })
+        });
     }
 
     pub fn filtered(&self, search_term: &str) -> Vec<Entry> {
