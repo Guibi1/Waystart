@@ -2,8 +2,8 @@ use gpui::prelude::FluentBuilder;
 use gpui::{
     App, AppContext, Context, Entity, FocusHandle, Focusable, ImageSource, InteractiveElement,
     IntoElement, KeyBinding, ObjectFit, ParentElement, Render, ScrollStrategy,
-    StatefulInteractiveElement, Styled, StyledImage, UniformListScrollHandle, Window, actions, div,
-    img, uniform_list,
+    StatefulInteractiveElement, Styled, StyledImage, TextOverflow, UniformListScrollHandle, Window,
+    actions, div, img, uniform_list,
 };
 
 use crate::config::Config;
@@ -154,7 +154,6 @@ impl Render for Waystart {
                                             .id(entry.name().clone())
                                             .w_full()
                                             .px_4()
-                                            .py_2()
                                             .h_12()
                                             .flex()
                                             .items_center()
@@ -163,7 +162,7 @@ impl Render for Waystart {
                                             .when_some(entry.icon(), |this, icon| {
                                                 this.child(
                                                     img(ImageSource::Resource(icon.clone()))
-                                                        .size_8()
+                                                        .size_7()
                                                         .mr_4()
                                                         .object_fit(ObjectFit::Contain),
                                                 )
@@ -179,7 +178,10 @@ impl Render for Waystart {
                                                             .when(selected, |this| {
                                                                 this.bg(config.muted)
                                                             })
-                                                            .child(" — ")
+                                                            .text_overflow(TextOverflow::Truncate(
+                                                                "...".into(),
+                                                            ))
+                                                            .child(" — ")
                                                             .child(description.clone()),
                                                     )
                                                 },
