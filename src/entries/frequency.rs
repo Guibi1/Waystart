@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::env;
 use std::ops::{Deref, DerefMut};
@@ -50,7 +51,7 @@ impl DerefMut for Frequencies {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Eq)]
 pub(super) struct EntryFrequency {
     score: u32,
     last_used: SystemTime,
@@ -86,5 +87,35 @@ impl EntryFrequency {
     pub fn increment(&mut self) {
         self.score += 1;
         self.last_used = SystemTime::now();
+    }
+}
+
+impl Default for EntryFrequency {
+    fn default() -> Self {
+        Self {
+            score: 0,
+            last_used: SystemTime::UNIX_EPOCH,
+        }
+    }
+}
+
+impl Ord for EntryFrequency {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.score().cmp(&other.score()) {
+            Ordering::Equal => self.last_used.cmp(&other.last_used),
+            order => order,
+        }
+    }
+}
+
+impl PartialOrd for EntryFrequency {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for EntryFrequency {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other).is_eq()
     }
 }

@@ -79,11 +79,8 @@ impl SearchEntries {
     }
 
     pub fn sort_by_frequency(&mut self) {
-        self.entries.sort_by_key(|e| {
-            Reverse(match self.frequencies.get(e.id()) {
-                Some(frequency) => frequency.score(),
-                None => 0,
-            })
+        self.entries.sort_by_cached_key(|e| {
+            Reverse(self.frequencies.get(e.id()).cloned().unwrap_or_default())
         });
     }
 
