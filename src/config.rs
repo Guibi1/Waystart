@@ -5,6 +5,7 @@ use gpui::{Global, Rgba, SharedString, rgb};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub font_family: SharedString,
 
@@ -38,7 +39,7 @@ impl Global for Config {}
 impl Config {
     pub fn load() -> Self {
         match std::fs::read_to_string(Self::get_path()) {
-            Ok(file) => toml::from_str(&file).expect("Failed to parse config.toml"),
+            Ok(file) => toml::from_str(&file).expect("Failed to parse the config file"),
             Err(_) => Self::default(),
         }
     }

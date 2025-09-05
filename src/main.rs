@@ -59,6 +59,12 @@ fn main() {
             cx.set_global(SearchEntries::load());
             cx.set_global(Config::load());
 
+            cx.on_app_quit(|cx| {
+                let entries = cx.remove_global::<SearchEntries>();
+                async move { entries.save().await }
+            })
+            .detach();
+
             let waystart = cx.new(Waystart::new);
 
             if daemon {

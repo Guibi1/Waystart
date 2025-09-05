@@ -1,12 +1,11 @@
 use std::cmp::Reverse;
-use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
 use gpui::{App, Global, Resource, SharedString};
 
 use crate::entries::application::Application;
-use crate::entries::frequency::EntryFrequency;
+use crate::entries::frequency::{EntryFrequency, Frequencies};
 
 mod application;
 mod frequency;
@@ -59,7 +58,7 @@ impl Entry {
 
 pub struct SearchEntries {
     entries: Vec<Entry>,
-    frequencies: HashMap<String, EntryFrequency>,
+    frequencies: Frequencies,
 }
 
 impl SearchEntries {
@@ -71,8 +70,12 @@ impl SearchEntries {
                 .map(Rc::new)
                 .map(Entry::Application)
                 .collect(),
-            frequencies: HashMap::new(),
+            frequencies: Frequencies::load(),
         }
+    }
+
+    pub async fn save(&self) {
+        self.frequencies.save().await;
     }
 
     pub fn sort_by_frequency(&mut self) {
