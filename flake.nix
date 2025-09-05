@@ -1,59 +1,57 @@
 {
+  description = "A start menu for Wayland-based window managers";
+
   inputs = {
-    naersk.url = "github:nmattia/naersk/master";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs =
     {
       self,
       nixpkgs,
-      utils,
-      naersk,
+      crane,
+      flake-utils,
       ...
     }:
-    utils.lib.eachDefaultSystem (
+    flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        naersk-lib = pkgs.callPackage naersk { };
+        pkgs = nixpkgs.legacyPackages.${system};
+        craneLib = crane.mkLib pkgs;
         libPath = with pkgs; lib.makeLibraryPath [ wayland vulkan-loader ];
+
+        commonArgs = {
+          src = craneLib.cleanCargoSource ./.;
+          strictDeps = true;
+
+          buildInputs = with pkgs; [ makeWrapper libxkbcommon ];
+        };
+
+        waystart = craneLib.buildPackage (
+          commonArgs
+          // {
+            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+            postInstall = ''
+              wrapProgram "$out/bin/waystart" --prefix LD_LIBRARY_PATH : "${libPath}"
+            '';
+          }
+        );
       in
       {
-        defaultPackage = naersk-lib.buildPackage {
-          src = ./.;
-          doCheck = true;
-          pname = "waystart";
-          nativeBuildInputs = [ pkgs.makeWrapper ];
-          buildInputs = with pkgs; [
-            libxkbcommon
-          ];
-          postInstall = ''
-            wrapProgram "$out/bin/sixty-two" --prefix LD_LIBRARY_PATH : "${libPath}"
-          '';
+        checks = { inherit waystart; };
+        packages.default = waystart;
+        apps.default = flake-utils.lib.mkApp {
+          drv = waystart;
         };
 
-        defaultApp = utils.lib.mkApp {
-          drv = self.defaultPackage."${system}";
+        devShells.default = craneLib.devShell {
+          checks = self.checks.${system};
+
+          packages = with pkgs; [ libxkbcommon ];
+          LD_LIBRARY_PATH = libPath;
         };
-
-        devShell =
-          with pkgs;
-          mkShell {
-            buildInputs = [
-              cargo
-              rust-analyzer
-              rustc
-              rustfmt
-              tokei
-              libxkbcommon
-            ];
-
-            RUST_SRC_PATH = rustPlatform.rustLibSrc;
-            LD_LIBRARY_PATH = libPath;
-            GIT_EXTERNAL_DIFF = "${difftastic}/bin/difft";
-          };
       }
     );
 }
