@@ -1,9 +1,11 @@
-use freedesktop_desktop_entry::{DesktopEntry, Iter, default_paths, get_languages_from_env};
-use freedesktop_icons::lookup;
+use std::collections::HashSet;
 use std::env;
+use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
+use freedesktop_icons::lookup;
 use gpui::{Resource, SharedString};
 
 #[derive(Debug)]
@@ -62,11 +64,25 @@ impl Application {
     }
 }
 
-pub fn get_desktop_entries() -> Vec<Application> {
+impl Hash for Application {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for Application {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Application {}
+
+pub fn load_applications() -> Vec<Application> {
     let locales = get_languages_from_env();
 
     Iter::new(default_paths())
-        .flat_map(|path| DesktopEntry::from_path(path, Some(&locales)))
+        .entries(Some(&locales))
         .filter_map(|entry| {
             if entry.no_display() || entry.hidden() {
                 return None;
@@ -85,5 +101,7 @@ pub fn get_desktop_entries() -> Vec<Application> {
                 open_in_terminal: entry.terminal(),
             })
         })
+        .collect::<HashSet<Application>>()
+        .into_iter()
         .collect()
 }

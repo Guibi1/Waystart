@@ -63,13 +63,14 @@ pub struct SearchEntries {
 
 impl SearchEntries {
     pub fn load() -> Self {
-        let entries = application::get_desktop_entries();
+        let entries = application::load_applications()
+            .into_iter()
+            .map(Rc::new)
+            .map(Entry::Application)
+            .collect();
+
         Self {
-            entries: entries
-                .into_iter()
-                .map(Rc::new)
-                .map(Entry::Application)
-                .collect(),
+            entries,
             frequencies: Frequencies::load(),
         }
     }
