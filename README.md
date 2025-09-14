@@ -4,9 +4,9 @@ A fast start menu for Wayland-based window managers.
 
 ## Features
 
-- Made only as an app launcher (no dmenu weirdness)
-- Configurable
-- Keyboard first (has vim bindings)
+- Single purpose
+- Keyboard first
+- Simple configuration
 - Power menu and other goodies
 
 ## Usage
