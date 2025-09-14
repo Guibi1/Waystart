@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use gpui::{App, Global, Resource, SharedString};
 
+use crate::config::Config;
 use crate::entries::application::Application;
 use crate::entries::frequency::{EntryFrequency, Frequencies};
 
@@ -41,17 +42,12 @@ impl Entry {
     }
 
     pub fn open(&self, cx: &mut App) -> bool {
-        let search_entries = cx.global_mut::<SearchEntries>();
-        if let Some(frequency) = search_entries.frequencies.get_mut(self.id()) {
-            frequency.increment();
-        } else {
-            search_entries
-                .frequencies
-                .insert(self.id().to_string(), EntryFrequency::new());
-        }
+        cx.global_mut::<SearchEntries>()
+            .increment_frequency(self.id());
 
+        let config = cx.global::<Config>();
         match self {
-            Entry::Application(entry) => entry.open(),
+            Entry::Application(entry) => entry.open(config),
         }
     }
 }
@@ -100,6 +96,15 @@ impl SearchEntries {
             })
             .cloned()
             .collect()
+    }
+
+    pub fn increment_frequency(&mut self, entry_id: &str) {
+        if let Some(frequency) = self.frequencies.get_mut(entry_id) {
+            frequency.increment();
+        } else {
+            self.frequencies
+                .insert(entry_id.to_string(), EntryFrequency::new());
+        }
     }
 }
 

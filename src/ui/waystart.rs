@@ -76,10 +76,10 @@ impl Render for Waystart {
             .size_full()
             .flex()
             .flex_col()
-            .bg(config.background)
-            .text_color(config.foreground)
-            .font_family(config.font_family.clone())
-            .border_color(config.border)
+            .bg(config.theme.background)
+            .text_color(config.theme.foreground)
+            .font_family(config.theme.font_family.clone())
+            .border_color(config.theme.border)
             .border_1()
             .rounded_lg()
             .overflow_hidden()
@@ -120,7 +120,7 @@ impl Render for Waystart {
                     .flex()
                     .pl_6()
                     .items_center()
-                    .child(Icon::Search.build(config.foreground))
+                    .child(Icon::Search.build(config.theme.foreground))
                     .child(self.search_bar.clone()),
             )
             .child(Separator::new())
@@ -135,7 +135,7 @@ impl Render for Waystart {
                         div()
                             .px_5()
                             .py_1()
-                            .text_color(config.muted_foreground)
+                            .text_color(config.theme.muted_foreground)
                             .child("Results"),
                     )
                     .child(
@@ -158,7 +158,7 @@ impl Render for Waystart {
                                             .flex()
                                             .items_center()
                                             .rounded_lg()
-                                            .when(selected, |this| this.bg(config.muted))
+                                            .when(selected, |this| this.bg(config.theme.muted))
                                             .when_some(entry.icon(), |this, icon| {
                                                 this.child(
                                                     img(ImageSource::Resource(icon.clone()))
@@ -174,9 +174,11 @@ impl Render for Waystart {
                                                     this.child(
                                                         div()
                                                             .flex()
-                                                            .text_color(config.muted_foreground)
+                                                            .text_color(
+                                                                config.theme.muted_foreground,
+                                                            )
                                                             .when(selected, |this| {
-                                                                this.bg(config.muted)
+                                                                this.bg(config.theme.muted)
                                                             })
                                                             .text_overflow(TextOverflow::Truncate(
                                                                 "...".into(),

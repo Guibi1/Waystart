@@ -3,10 +3,13 @@ use std::env;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::LazyLock;
 
 use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
 use gpui::{Resource, SharedString};
+
+use crate::config::Config;
 
 #[derive(Debug)]
 pub struct Application {
@@ -20,44 +23,33 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn open(&self) -> bool {
-        let [exec, args @ ..] = self.exec.as_slice() else {
-            eprintln!("Exec command was empty.");
-            return false;
-        };
-
+    pub fn open(&self, config: &Config) -> bool {
         let mut cmd = if self.open_in_terminal {
-            let terminal = env::var_os("TERMINAL")
-                .map(|s| {
-                    s.into_string()
-                        .expect("The $TERMINAL environment variable should be a valid UTF-8 string")
-                })
-                .unwrap_or_else(|| String::from("ghostty"));
-            let mut cmd = Command::new(terminal);
-            cmd.arg("-e");
+            let mut cmd = Command::new(config.terminal.as_deref().unwrap_or_else(|| *TERMINAL));
+            cmd.arg("-e").args(&self.exec);
             cmd
         } else {
-            Command::new(exec)
+            let [exec, args @ ..] = self.exec.as_slice() else {
+                eprintln!("Failed to launch {}: Exec command was empty.", self.name);
+                return false;
+            };
+
+            let mut cmd = Command::new(exec);
+            cmd.args(args);
+            cmd
         };
 
-        cmd.args(args);
-        cmd.stdout(Stdio::null()).stderr(Stdio::null());
-
-        if let Some(cwd) = &self.working_dir {
+        if let Some(ref cwd) = self.working_dir {
             cmd.current_dir(cwd);
         } else if let Some(cwd) = env::home_dir() {
             cmd.current_dir(cwd);
         }
 
+        cmd.stdout(Stdio::null()).stderr(Stdio::null());
         match cmd.spawn() {
             Ok(_) => true,
             Err(e) => {
                 eprintln!("Failed to launch {}: {}.", self.name, e);
-                if self.open_in_terminal {
-                    eprintln!(
-                        "Please ensure that the $TERMINAL env is correct, or override it in the config."
-                    );
-                }
                 false
             }
         }
@@ -105,3 +97,20 @@ pub fn load_applications() -> Vec<Application> {
         .into_iter()
         .collect()
 }
+
+static TERMINAL: LazyLock<&str> = LazyLock::new(|| {
+    let paths = env::split_paths(&env::var_os("PATH").unwrap()).collect::<Vec<_>>();
+    [
+        "ghostty",
+        "kitty",
+        "alacritty",
+        "foot",
+        "gnome-terminal",
+        "konsole",
+    ]
+    .into_iter()
+    .find(|term| paths.iter().any(|dir| dir.join(&term).is_file()))
+    .expect(
+        "Failed to find a terminal emulator in your PATH. Please use the config to specify one.",
+    )
+});

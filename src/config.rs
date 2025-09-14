@@ -7,6 +7,14 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
+    pub terminal: Option<String>,
+
+    pub theme: ThemeConfig,
+}
+
+#[derive(Deserialize)]
+#[serde(default)]
+pub struct ThemeConfig {
     pub font_family: SharedString,
 
     pub background: Rgba,
@@ -19,6 +27,15 @@ pub struct Config {
 }
 
 impl Default for Config {
+    fn default() -> Self {
+        Self {
+            terminal: None,
+            theme: ThemeConfig::default(),
+        }
+    }
+}
+
+impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
             font_family: SharedString::from("Cascadia Code PL"),

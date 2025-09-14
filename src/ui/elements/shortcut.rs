@@ -23,8 +23,8 @@ impl RenderOnce for Shortcut {
             .py_1()
             .line_height(px(12.))
             .rounded_sm()
-            .bg(config.accent)
-            .text_color(config.accent_foreground)
+            .bg(config.theme.accent)
+            .text_color(config.theme.accent_foreground)
             .child(self.text)
     }
 }

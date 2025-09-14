@@ -108,9 +108,9 @@ impl Render for DropdownContent {
             .flex()
             .flex_col()
             .p_1()
-            .bg(config.background)
-            .text_color(config.foreground)
-            .border_color(config.accent)
+            .bg(config.theme.background)
+            .text_color(config.theme.foreground)
+            .border_color(config.theme.accent)
             .border_1()
             .rounded_md()
             .overflow_hidden()
@@ -157,7 +157,7 @@ impl Render for DropdownContent {
                         this.style().refine(&self.item_style);
                         this
                     })
-                    .when(self.selected == i, |this| this.bg(config.muted))
+                    .when(self.selected == i, |this| this.bg(config.theme.muted))
                     .on_mouse_move(cx.listener(move |this, _, _, cx| {
                         if this.selected != i {
                             this.selected = i;
@@ -172,7 +172,7 @@ impl Render for DropdownContent {
                         })
                     })
                     .when_some(item.icon, |this, icon| {
-                        this.child(icon.build(config.foreground))
+                        this.child(icon.build(config.theme.foreground))
                     })
                     .child(item.label.clone())
             }))

@@ -29,8 +29,8 @@ impl RenderOnce for PowerOptions {
                     .items_center()
                     .justify_center()
                     .rounded_lg()
-                    .hover(|style| style.bg(config.muted))
-                    .child(Icon::Power.build(config.foreground)),
+                    .hover(|style| style.bg(config.theme.muted))
+                    .child(Icon::Power.build(config.theme.foreground)),
             )
             .content(|cx| {
                 DropdownContent::new(cx)

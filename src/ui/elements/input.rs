@@ -490,7 +490,7 @@ impl Element for TextElement {
         let style = window.text_style();
 
         let (display_text, text_color) = if content.is_empty() {
-            (input.placeholder.clone(), config.muted.into())
+            (input.placeholder.clone(), config.theme.muted.into())
         } else {
             (content.clone(), style.color)
         };
@@ -555,7 +555,7 @@ impl Element for TextElement {
                             point(bounds.left() + cursor_pos, bounds.top() + px(2.)),
                             size(px(2.), bounds.bottom() - bounds.top() - px(8.)),
                         ),
-                        config.accent,
+                        config.theme.accent,
                     )
                     .corner_radii(px(1.)),
                 ),
@@ -573,7 +573,7 @@ impl Element for TextElement {
                             bounds.bottom(),
                         ),
                     ),
-                    config.muted,
+                    config.theme.muted,
                 )),
                 None,
             )
@@ -631,7 +631,7 @@ impl Render for TextInput {
             .px_4()
             .py_3()
             .flex_grow()
-            .bg(config.background)
+            .bg(config.theme.background)
             .text_lg()
             .cursor_text()
             .track_focus(&self.focus_handle(cx))
