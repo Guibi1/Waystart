@@ -8,6 +8,7 @@ use std::sync::LazyLock;
 use freedesktop_desktop_entry::{Iter, default_paths, get_languages_from_env};
 use freedesktop_icons::lookup;
 use gpui::{Resource, SharedString};
+use nucleo_matcher::Utf32String;
 
 use crate::config::Config;
 
@@ -17,6 +18,7 @@ pub struct Application {
     pub name: SharedString,
     pub description: Option<SharedString>,
     pub icon: Option<Resource>,
+    pub searchable: Utf32String,
     exec: Vec<String>,
     working_dir: Option<PathBuf>,
     open_in_terminal: bool,
@@ -80,14 +82,25 @@ pub fn load_applications() -> Vec<Application> {
                 return None;
             }
 
+            let name = SharedString::from(entry.name(&locales)?.into_owned());
+            let description = entry
+                .comment(&locales)
+                .map(|c| SharedString::from(c.into_owned()));
+            let icon = entry
+                .icon()
+                .and_then(|i| lookup(i).with_cache().with_size(28).find())
+                .map(|i| i.into());
+            let searchable = Utf32String::from(match description {
+                Some(ref d) => name.to_string() + " " + d.as_str(),
+                None => name.to_string(),
+            });
+
             Some(Application {
                 id: entry.id().to_string(),
-                name: entry.name(&locales).map(|c| c.into_owned().into())?,
-                description: entry.comment(&locales).map(|c| c.into_owned().into()),
-                icon: entry
-                    .icon()
-                    .and_then(|i| lookup(i).with_cache().with_size(28).find())
-                    .map(|i| i.into()),
+                name,
+                description,
+                icon,
+                searchable,
                 exec: entry.parse_exec_with_uris(&[], &locales).ok()?,
                 working_dir: entry.path().and_then(|entry| entry.parse().ok()),
                 open_in_terminal: entry.terminal(),
@@ -109,7 +122,7 @@ static TERMINAL: LazyLock<&str> = LazyLock::new(|| {
         "konsole",
     ]
     .into_iter()
-    .find(|term| paths.iter().any(|dir| dir.join(&term).is_file()))
+    .find(|term| paths.iter().any(|dir| dir.join(term).is_file()))
     .expect(
         "Failed to find a terminal emulator in your PATH. Please use the config to specify one.",
     )

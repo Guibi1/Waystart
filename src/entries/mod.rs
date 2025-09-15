@@ -1,8 +1,11 @@
+use std::cell::RefCell;
 use std::cmp::Reverse;
 use std::ops::Deref;
 use std::rc::Rc;
 
 use gpui::{App, Global, Resource, SharedString};
+use nucleo_matcher::pattern::{AtomKind, CaseMatching, Normalization, Pattern};
+use nucleo_matcher::{Matcher, Utf32Str};
 
 use crate::config::Config;
 use crate::entries::application::Application;
@@ -41,6 +44,12 @@ impl Entry {
         }
     }
 
+    pub fn searchable(&self) -> Utf32Str<'_> {
+        match self {
+            Entry::Application(entry) => entry.searchable.slice(..),
+        }
+    }
+
     pub fn open(&self, cx: &mut App) -> bool {
         cx.global_mut::<SearchEntries>()
             .increment_frequency(self.id());
@@ -55,6 +64,7 @@ impl Entry {
 pub struct SearchEntries {
     entries: Vec<Entry>,
     frequencies: Frequencies,
+    matcher: RefCell<Matcher>,
 }
 
 impl SearchEntries {
@@ -68,6 +78,7 @@ impl SearchEntries {
         Self {
             entries,
             frequencies: Frequencies::load(),
+            matcher: RefCell::new(Matcher::default()),
         }
     }
 
@@ -82,18 +93,32 @@ impl SearchEntries {
     }
 
     pub fn filtered(&self, search_term: &str) -> Vec<Entry> {
-        if search_term.trim().is_empty() {
+        let search_term = search_term.trim();
+        if search_term.is_empty() {
             return self.entries.clone();
         }
 
-        self.entries
+        let p = Pattern::new(
+            search_term,
+            CaseMatching::Ignore,
+            Normalization::Smart,
+            AtomKind::Fuzzy,
+        );
+
+        let mut matcher = self.matcher.borrow_mut();
+        let mut result: Vec<_> = self
+            .entries
             .iter()
-            .filter(|entry| {
-                entry.name().to_lowercase().contains(search_term)
-                    || entry
-                        .description()
-                        .is_some_and(|desc| desc.to_lowercase().contains(search_term))
+            .filter_map(|item| {
+                p.score(item.searchable(), &mut matcher)
+                    .map(|score| (item, score))
             })
+            .collect();
+        result.sort_by_key(|(_, score)| Reverse(*score));
+
+        result
+            .into_iter()
+            .map(|(entry, _)| entry)
             .cloned()
             .collect()
     }

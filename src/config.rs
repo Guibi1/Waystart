@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use gpui::{Global, Rgba, SharedString, rgb};
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub terminal: Option<String>,
@@ -24,15 +24,6 @@ pub struct ThemeConfig {
     pub muted_foreground: Rgba,
     pub accent: Rgba,
     pub accent_foreground: Rgba,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            terminal: None,
-            theme: ThemeConfig::default(),
-        }
-    }
 }
 
 impl Default for ThemeConfig {
