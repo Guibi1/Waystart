@@ -22,17 +22,30 @@
         craneLib = crane.mkLib pkgs;
         libPath = with pkgs; lib.makeLibraryPath [ wayland vulkan-loader ];
 
-        commonArgs = {
-          src = craneLib.cleanCargoSource ./.;
+        commonArgs = with pkgs; {
+          src = lib.fileset.toSource {
+            root = ./.;
+            fileset = lib.fileset.unions [
+              (craneLib.fileset.commonCargoSources ./.)
+              (lib.fileset.maybeMissing ./assets)
+            ];
+          };
           strictDeps = true;
 
           buildInputs = with pkgs; [ makeWrapper libxkbcommon ];
         };
 
-        waystart = craneLib.buildPackage (
-          commonArgs
-          // {
-            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
+          pname = "waystart-deps";
+        });
+
+        waystartClippy = craneLib.cargoClippy (commonArgs // {
+          inherit cargoArtifacts;
+          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        });
+
+        waystart = craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
             postInstall = ''
               wrapProgram "$out/bin/waystart" --prefix LD_LIBRARY_PATH : "${libPath}"
             '';
@@ -40,7 +53,7 @@
         );
       in
       {
-        checks = { inherit waystart; };
+        checks = { inherit waystart waystartClippy; };
         packages.default = waystart;
         apps.default = flake-utils.lib.mkApp {
           drv = waystart;
