@@ -1,5 +1,5 @@
-use std::env;
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 use gpui::{Global, Rgba, SharedString, rgb};
 use serde::Deserialize;
@@ -46,16 +46,15 @@ impl Global for Config {}
 
 impl Config {
     pub fn load() -> Self {
-        match std::fs::read_to_string(Self::get_path()) {
+        match std::fs::read_to_string(&*CONFIG_SAVE_PATH) {
             Ok(file) => toml::from_str(&file).expect("Failed to parse the config file"),
             Err(_) => Self::default(),
         }
     }
-
-    fn get_path() -> PathBuf {
-        match env::var("XDG_CONFIG_DIR") {
-            Ok(config) => PathBuf::from(config).join("waystart.toml"),
-            Err(_) => env::home_dir().unwrap().join(".config/waystart.toml"),
-        }
-    }
 }
+
+static CONFIG_SAVE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    dirs::data_dir()
+        .expect("Failed to get config directory")
+        .join("waystart.toml")
+});

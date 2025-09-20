@@ -9,9 +9,11 @@ use nucleo_matcher::{Matcher, Utf32Str};
 
 use crate::config::Config;
 use crate::entries::application::Application;
+use crate::entries::favorites::Favorites;
 use crate::entries::frequency::{EntryFrequency, Frequencies};
 
 mod application;
+mod favorites;
 mod frequency;
 
 #[derive(Clone)]
@@ -20,7 +22,7 @@ pub enum Entry {
 }
 
 impl Entry {
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &SharedString {
         match self {
             Entry::Application(entry) => &entry.id,
         }
@@ -64,12 +66,13 @@ impl Entry {
 pub struct SearchEntries {
     entries: Vec<Entry>,
     frequencies: Frequencies,
+    favorites: Favorites,
     matcher: RefCell<Matcher>,
 }
 
 impl SearchEntries {
     pub fn load() -> Self {
-        let entries = application::load_applications()
+        let entries = Application::load()
             .into_iter()
             .map(Rc::new)
             .map(Entry::Application)
@@ -78,17 +81,24 @@ impl SearchEntries {
         Self {
             entries,
             frequencies: Frequencies::load(),
+            favorites: Favorites::load(),
             matcher: RefCell::new(Matcher::default()),
         }
     }
 
     pub async fn save(&self) {
         self.frequencies.save().await;
+        self.favorites.save().await;
     }
 
     pub fn sort_by_frequency(&mut self) {
         self.entries.sort_by_cached_key(|e| {
-            Reverse(self.frequencies.get(e.id()).cloned().unwrap_or_default())
+            Reverse(
+                self.frequencies
+                    .get(e.id().as_str())
+                    .cloned()
+                    .unwrap_or_default(),
+            )
         });
     }
 
@@ -123,12 +133,24 @@ impl SearchEntries {
             .collect()
     }
 
-    pub fn increment_frequency(&mut self, entry_id: &str) {
+    pub fn favorites(&self) -> Vec<Entry> {
+        self.favorites
+            .iter()
+            .filter_map(|id| self.entries.iter().find(|entry| entry.id() == id))
+            .cloned()
+            .collect()
+    }
+
+    pub fn add_favorite(&mut self, entry: &Entry) {
+        self.favorites.insert(entry.id().clone());
+    }
+
+    pub fn increment_frequency(&mut self, entry_id: &SharedString) {
         if let Some(frequency) = self.frequencies.get_mut(entry_id) {
             frequency.increment();
         } else {
             self.frequencies
-                .insert(entry_id.to_string(), EntryFrequency::new());
+                .insert(entry_id.clone(), EntryFrequency::new());
         }
     }
 }

@@ -1,6 +1,4 @@
-use std::collections::HashSet;
 use std::env;
-use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::LazyLock;
@@ -14,7 +12,7 @@ use crate::config::Config;
 
 #[derive(Debug)]
 pub struct Application {
-    pub id: String,
+    pub id: SharedString,
     pub name: SharedString,
     pub description: Option<SharedString>,
     pub icon: Option<Resource>,
@@ -56,59 +54,54 @@ impl Application {
             }
         }
     }
-}
 
-impl Hash for Application {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-    }
-}
+    pub fn load() -> Vec<Self> {
+        let locales = get_languages_from_env();
 
-impl PartialEq for Application {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for Application {}
-
-pub fn load_applications() -> Vec<Application> {
-    let locales = get_languages_from_env();
-
-    Iter::new(default_paths())
-        .entries(Some(&locales))
-        .filter_map(|entry| {
+        let mut applications = Vec::new();
+        for entry in Iter::new(default_paths()).entries(Some(&locales)) {
             if entry.no_display() || entry.hidden() {
-                return None;
+                continue;
             }
 
-            let name = SharedString::from(entry.name(&locales)?.into_owned());
+            let id = SharedString::from(entry.id().to_string());
+            if applications.iter().any(|a: &Application| a.id == id) {
+                continue;
+            }
+
+            let Ok(exec) = entry.parse_exec_with_uris(&[], &locales) else {
+                continue;
+            };
+            let name = match entry.name(&locales) {
+                Some(name) => SharedString::from(name.into_owned()),
+                None => continue,
+            };
             let description = entry
                 .comment(&locales)
-                .map(|c| SharedString::from(c.into_owned()));
+                .map(|description| SharedString::from(description.into_owned()));
             let icon = entry
                 .icon()
-                .and_then(|i| lookup(i).with_cache().with_size(28).find())
-                .map(|i| i.into());
+                .and_then(|icon| lookup(icon).with_cache().with_size(28).find())
+                .map(|path| Resource::Path(path.into()));
             let searchable = Utf32String::from(match description {
                 Some(ref d) => name.to_string() + " " + d.as_str(),
                 None => name.to_string(),
             });
 
-            Some(Application {
-                id: entry.id().to_string(),
+            applications.push(Application {
+                id,
                 name,
                 description,
                 icon,
                 searchable,
-                exec: entry.parse_exec_with_uris(&[], &locales).ok()?,
+                exec,
                 working_dir: entry.path().and_then(|entry| entry.parse().ok()),
                 open_in_terminal: entry.terminal(),
-            })
-        })
-        .collect::<HashSet<Application>>()
-        .into_iter()
-        .collect()
+            });
+        }
+
+        applications
+    }
 }
 
 static TERMINAL: LazyLock<&str> = LazyLock::new(|| {

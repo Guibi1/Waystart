@@ -1,17 +1,19 @@
 use gpui::prelude::FluentBuilder;
 use gpui::{
-    App, AppContext, Context, Entity, FocusHandle, Focusable, ImageSource, InteractiveElement,
-    IntoElement, KeyBinding, ObjectFit, ParentElement, Render, ScrollStrategy,
-    StatefulInteractiveElement, Styled, StyledImage, TextOverflow, UniformListScrollHandle, Window,
-    actions, div, img, uniform_list,
+    App, AppContext, Context, Entity, FocusHandle, Focusable, InteractiveElement, IntoElement,
+    KeyBinding, ParentElement, Render, ScrollStrategy, Styled, UniformListScrollHandle, Window,
+    actions, div, uniform_list,
 };
 
 use crate::config::Config;
 use crate::entries::{Entry, SearchEntries};
 use crate::ui::PowerOptions;
-use crate::ui::elements::{Icon, Separator, Shortcut, TextInput};
+use crate::ui::elements::{EntryButton, Icon, Separator, Shortcut, TextInput};
 
-actions!(waystart, [SelectPrev, SelectNext, OpenProgram, Close]);
+actions!(
+    waystart,
+    [SelectPrev, SelectNext, OpenProgram, AddFavorite, Close]
+);
 const CONTEXT: &str = "Waystart";
 
 pub(super) fn init(cx: &mut App) {
@@ -21,6 +23,7 @@ pub(super) fn init(cx: &mut App) {
         KeyBinding::new("shift-tab", SelectPrev, Some(CONTEXT)),
         KeyBinding::new("tab", SelectNext, Some(CONTEXT)),
         KeyBinding::new("enter", OpenProgram, Some(CONTEXT)),
+        KeyBinding::new("secondary-d", AddFavorite, Some(CONTEXT)),
         KeyBinding::new("escape", Close, Some(CONTEXT)),
     ]);
 }
@@ -61,16 +64,20 @@ impl Waystart {
     }
 
     fn filter_results(&mut self, cx: &mut Context<Self>) {
-        let search_term = self.search_bar.read(cx).content().to_lowercase();
-        self.entries = cx.global::<SearchEntries>().filtered(&search_term);
-        self.selected = 0;
-        cx.notify();
+        if let Some(entries) = cx.try_global::<SearchEntries>() {
+            let search_term = self.search_bar.read(cx).content().to_lowercase();
+            self.entries = entries.filtered(&search_term);
+            self.selected = 0;
+            cx.notify();
+        }
     }
 }
 
 impl Render for Waystart {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let config = cx.global::<Config>();
+        let favorites = cx.global::<SearchEntries>().favorites();
+        let is_searching = !self.search_bar.read(cx).content().is_empty();
 
         div()
             .size_full()
@@ -85,8 +92,8 @@ impl Render for Waystart {
             .overflow_hidden()
             .track_focus(&self.focus_handle(cx))
             .key_context(CONTEXT)
-            .on_action(|_: &Close, window, _| window.remove_window())
-            .on_action(cx.listener(move |this, _: &SelectPrev, _, cx| {
+            .on_action::<Close>(|_, window, _| window.remove_window())
+            .on_action::<SelectPrev>(cx.listener(move |this, _, _, cx| {
                 if this.selected == 0 {
                     this.selected = this.entries.len().saturating_sub(1);
                 } else {
@@ -96,7 +103,7 @@ impl Render for Waystart {
                     .scroll_to_item(this.selected, ScrollStrategy::Top);
                 cx.notify();
             }))
-            .on_action(cx.listener(move |this, _: &SelectNext, _, cx| {
+            .on_action::<SelectNext>(cx.listener(move |this, _, _, cx| {
                 if this.selected + 1 == this.entries.len() {
                     this.selected = 0;
                 } else {
@@ -106,12 +113,18 @@ impl Render for Waystart {
                     .scroll_to_item(this.selected, ScrollStrategy::Top);
                 cx.notify();
             }))
-            .on_action(cx.listener(move |this, _: &OpenProgram, window, cx| {
+            .on_action::<OpenProgram>(cx.listener(move |this, _, window, cx| {
                 let entry = this.entries.get(this.selected).cloned();
-                if let Some(entry) = &entry
+                if let Some(ref entry) = entry
                     && entry.open(cx)
                 {
                     window.remove_window();
+                }
+            }))
+            .on_action::<AddFavorite>(cx.listener(move |this, _, _, cx| {
+                let entry = this.entries.get(this.selected).cloned();
+                if let Some(ref entry) = entry {
+                    cx.global_mut::<SearchEntries>().add_favorite(entry);
                 }
             }))
             .child(
@@ -124,6 +137,27 @@ impl Render for Waystart {
                     .child(self.search_bar.clone()),
             )
             .child(Separator::new())
+            .when(!favorites.is_empty() && !is_searching, |this| {
+                this.child(
+                    div()
+                        .gap_1()
+                        .px_2()
+                        .child(
+                            div()
+                                .px_5()
+                                .py_1()
+                                .text_color(config.theme.muted_foreground)
+                                .child("Favorites"),
+                        )
+                        .child(
+                            div().flex().gap_2().items_center().children(
+                                favorites.into_iter().map(|entry| {
+                                    EntryButton::new(entry, false, |_| {}).favorite(true)
+                                }),
+                            ),
+                        ),
+                )
+            })
             .child(
                 div()
                     .flex_grow()
@@ -136,69 +170,28 @@ impl Render for Waystart {
                             .px_5()
                             .py_1()
                             .text_color(config.theme.muted_foreground)
-                            .child("Results"),
+                            .child(if is_searching { "Results" } else { "Recents" }),
                     )
                     .child(
                         uniform_list(
                             "entry_list",
                             self.entries.len(),
                             cx.processor(move |this, range: std::ops::Range<usize>, _, cx| {
-                                let config = cx.global::<Config>();
-
                                 range
                                     .map(|i| {
-                                        let selected = i == this.selected;
-                                        let entry = this.entries.get(i).unwrap().clone();
-
-                                        div()
-                                            .id(entry.name().clone())
-                                            .w_full()
-                                            .px_4()
-                                            .h_12()
-                                            .flex()
-                                            .items_center()
-                                            .rounded_lg()
-                                            .when(selected, |this| this.bg(config.theme.muted))
-                                            .when_some(entry.icon(), |this, icon| {
-                                                this.child(
-                                                    img(ImageSource::Resource(icon.clone()))
-                                                        .size_7()
-                                                        .mr_4()
-                                                        .object_fit(ObjectFit::Contain),
-                                                )
-                                            })
-                                            .child(entry.name().clone())
-                                            .when_some(
-                                                selected.then_some(entry.description()).flatten(),
-                                                |this, description| {
-                                                    this.child(
-                                                        div()
-                                                            .flex()
-                                                            .text_color(
-                                                                config.theme.muted_foreground,
-                                                            )
-                                                            .when(selected, |this| {
-                                                                this.bg(config.theme.muted)
-                                                            })
-                                                            .text_overflow(TextOverflow::Truncate(
-                                                                "...".into(),
-                                                            ))
-                                                            .child(" — ")
-                                                            .child(description.clone()),
-                                                    )
-                                                },
-                                            )
-                                            .on_mouse_move(cx.listener(move |this, _, _, cx| {
-                                                if !selected {
-                                                    this.selected = i;
-                                                    cx.notify();
-                                                }
-                                            }))
-                                            .on_click(move |_, window, cx| {
-                                                if entry.open(cx) {
-                                                    window.remove_window();
-                                                }
-                                            })
+                                        let entity = cx.entity().downgrade();
+                                        EntryButton::new(
+                                            this.entries.get(i).unwrap().clone(),
+                                            i == this.selected,
+                                            move |cx| {
+                                                entity
+                                                    .update(cx, |this, cx| {
+                                                        this.selected = i;
+                                                        cx.notify();
+                                                    })
+                                                    .ok();
+                                            },
+                                        )
                                     })
                                     .collect()
                             }),
