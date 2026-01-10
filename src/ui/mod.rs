@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use gpui::{App, AssetSource};
 use rust_embed::RustEmbed;
 
-pub mod elements;
 mod actions;
+pub mod elements;
 mod waystart;
 
 pub use waystart::Waystart;
