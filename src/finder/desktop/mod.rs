@@ -42,7 +42,7 @@ impl SearchEntries {
     pub fn favorites(&self) -> Vec<Rc<dyn Entry>> {
         self.favorites
             .iter()
-            .filter_map(|id| self.entries.iter().find(|entry| entry.id() == id))
+            .filter_map(|id| self.entries.iter().find(|entry| entry.id == *id))
             .map(|e| e.clone() as Rc<dyn Entry>)
             .collect()
     }
@@ -70,15 +70,20 @@ impl Finder for SearchEntries {
         }
     }
 
-    fn default_entries(&self) -> impl Iterator<Item = Rc<dyn Entry>> {
-        self.entries.iter().map(|e| e.clone() as Rc<dyn Entry>)
+    fn default_entries(&self) -> Option<Vec<Rc<dyn Entry>>> {
+        Some(
+            self.entries
+                .iter()
+                .map(|e| e.clone() as Rc<dyn Entry>)
+                .collect(),
+        )
     }
 
     fn filtered_entries(
         &self,
         matcher: &mut nucleo_matcher::Matcher,
         search_term: &str,
-    ) -> impl Iterator<Item = Rc<dyn Entry>> {
+    ) -> Option<Vec<Rc<dyn Entry>>> {
         let search_pattern = Pattern::new(
             search_term,
             CaseMatching::Ignore,
@@ -92,14 +97,18 @@ impl Finder for SearchEntries {
             .enumerate()
             .filter_map(|(idx, entry)| {
                 search_pattern
-                    .score(entry.haystack(), matcher)
+                    .score(entry.haystack.slice(..), matcher)
                     .map(|score| (idx, score))
             })
             .collect();
         result.sort_by_key(|(_, score)| Reverse(*score));
-        result
-            .into_iter()
-            .map(|(i, _)| self.entries[i].clone() as Rc<dyn Entry>)
+
+        Some(
+            result
+                .into_iter()
+                .map(|(i, _)| self.entries[i].clone() as Rc<dyn Entry>)
+                .collect(),
+        )
     }
 }
 

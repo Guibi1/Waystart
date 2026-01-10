@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 
-use freedesktop_icons::lookup;
 use gpui::{App, Resource, SharedString};
 use nucleo_matcher::Utf32String;
 
@@ -23,24 +22,20 @@ pub struct DesktopEntry {
 }
 
 impl Entry for DesktopEntry {
-    fn id(&self) -> &SharedString {
-        &self.id
+    fn id(&self) -> SharedString {
+        self.id.clone()
     }
 
-    fn text(&self) -> &SharedString {
-        &self.name
+    fn text(&self) -> SharedString {
+        self.name.clone()
     }
 
-    fn description(&self) -> Option<&SharedString> {
-        self.description.as_ref()
+    fn description(&self) -> Option<SharedString> {
+        self.description.clone()
     }
 
-    fn icon(&self) -> Option<&Resource> {
-        self.icon.as_ref()
-    }
-
-    fn haystack(&self) -> nucleo_matcher::Utf32Str<'_> {
-        self.haystack.slice(..)
+    fn icon(&self) -> Option<Resource> {
+        self.icon.clone()
     }
 
     fn can_favorite(&self) -> bool {
@@ -49,7 +44,7 @@ impl Entry for DesktopEntry {
 
     fn execute(&self, cx: &mut App) -> EntryExecuteResult {
         cx.global_mut::<SearchEntries>()
-            .increment_frequency(self.id());
+            .increment_frequency(&self.id);
 
         let config = cx.global::<Config>();
         let mut cmd = if self.open_in_terminal {
@@ -110,7 +105,12 @@ impl DesktopEntry {
                 .map(|description| SharedString::from(description.into_owned()));
             let icon = entry
                 .icon()
-                .and_then(|icon| lookup(icon).with_cache().with_size(28).find())
+                .and_then(|icon| {
+                    freedesktop_icons::lookup(icon)
+                        .with_cache()
+                        .with_size(28)
+                        .find()
+                })
                 .map(|path| Resource::Path(path.into()));
             let haystack = Utf32String::from(match description {
                 Some(ref d) => name.to_string() + " " + d.as_str(),

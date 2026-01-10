@@ -10,7 +10,7 @@ use gpui::{
 
 use crate::config::Config;
 use crate::finder::desktop::SearchEntries;
-use crate::finder::{Entry, EntryExecuteResult, Finder};
+use crate::finder::{Entry, EntryExecuteResult, Finder, default_finders};
 use crate::ui::actions::{Close, ExecuteEntry, SelectNextEntry, SelectPrevEntry, ToggleFavorite};
 use crate::ui::elements::{EntryButton, Icon, PowerOptions, Separator, Shortcut, TextInput};
 
@@ -34,6 +34,8 @@ pub struct Waystart {
     list_scroll_handle: UniformListScrollHandle,
     search_bar: Entity<TextInput>,
     selected: usize,
+
+    finders: Vec<Box<dyn Finder>>,
     matcher: RefCell<nucleo_matcher::Matcher>,
 }
 
@@ -51,10 +53,12 @@ impl Waystart {
 
         Self {
             focus_handle,
-            entries: cx.global::<SearchEntries>().default_entries().collect(),
+            entries: cx.global::<SearchEntries>().default_entries().unwrap(),
             list_scroll_handle: UniformListScrollHandle::new(),
             search_bar,
             selected: 0,
+
+            finders: default_finders(),
             matcher: RefCell::new(nucleo_matcher::Matcher::default()),
         }
     }
@@ -66,21 +70,28 @@ impl Waystart {
     }
 
     fn filter_results(&mut self, cx: &mut Context<Self>) {
-        if let Some(entries) = cx.try_global::<SearchEntries>() {
-            self.entries.clear();
-            let search_term = self.search_bar.read(cx).content().trim();
+        self.entries.clear();
+        let search_term = self.search_bar.read(cx).content().trim();
 
-            if search_term.is_empty() {
-                self.entries.extend(entries.default_entries());
-            } else {
-                let mut matcher = self.matcher.borrow_mut();
-                self.entries
-                    .extend(entries.filtered_entries(&mut matcher, search_term));
-            }
-
-            self.selected = 0;
-            cx.notify();
+        if search_term.is_empty() {
+            self.entries.extend(
+                self.finders
+                    .iter()
+                    .filter_map(|finder| finder.default_entries())
+                    .flatten(),
+            );
+        } else {
+            let mut matcher = self.matcher.borrow_mut();
+            self.entries.extend(
+                self.finders
+                    .iter()
+                    .filter_map(|finder| finder.filtered_entries(&mut matcher, search_term))
+                    .flatten(),
+            );
         }
+
+        self.selected = 0;
+        cx.notify();
     }
 
     fn on_close(_: &Close, window: &mut Window, _cx: &mut App) {
