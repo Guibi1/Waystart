@@ -4,14 +4,15 @@ use gpui::{
 };
 
 use crate::config::Config;
-use crate::entries::SearchEntries;
+use crate::finder::Finder;
+use crate::finder::desktop::SearchEntries;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
 use crate::ui::Waystart;
 
 mod cli;
 mod config;
-mod entries;
+mod finder;
 mod ipc;
 mod ui;
 
@@ -56,7 +57,7 @@ fn main() {
         .keep_running(daemon)
         .run(move |cx| {
             ui::init(cx);
-            cx.set_global(SearchEntries::load());
+            cx.set_global(SearchEntries::new());
             cx.set_global(Config::load());
 
             cx.on_app_quit(|cx| {

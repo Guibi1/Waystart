@@ -4,10 +4,9 @@ use gpui::{App, AssetSource};
 use rust_embed::RustEmbed;
 
 pub mod elements;
-mod power_options;
+mod actions;
 mod waystart;
 
-pub use power_options::PowerOptions;
 pub use waystart::Waystart;
 
 pub fn init(cx: &mut App) {

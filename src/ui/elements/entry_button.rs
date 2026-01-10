@@ -1,26 +1,26 @@
+use std::rc::Rc;
+
 use gpui::{
     App, ImageSource, InteractiveElement, IntoElement, ObjectFit, ParentElement, RenderOnce,
-    StatefulInteractiveElement, Styled, StyledImage, TextOverflow, Window, div, img,
-    prelude::FluentBuilder,
+    Styled, StyledImage, TextOverflow, Window, div, img, prelude::FluentBuilder,
 };
 
-use crate::{config::Config, entries::Entry};
+use crate::config::Config;
+use crate::finder::Entry;
 
 #[derive(IntoElement)]
 pub struct EntryButton {
-    entry: Entry,
+    entry: Rc<dyn Entry>,
     selected: bool,
     favorite: bool,
-    select: Box<dyn Fn(&mut App)>,
 }
 
 impl EntryButton {
-    pub fn new(entry: Entry, selected: bool, select: impl Fn(&mut App) + 'static) -> EntryButton {
+    pub fn new(entry: Rc<dyn Entry>, selected: bool) -> EntryButton {
         EntryButton {
             entry,
             selected,
             favorite: false,
-            select: Box::new(select),
         }
     }
 
@@ -35,7 +35,6 @@ impl RenderOnce for EntryButton {
         let config = cx.global::<Config>();
 
         div()
-            .id(self.entry.id().clone())
             .flex()
             .items_center()
             .rounded_lg()
@@ -52,7 +51,6 @@ impl RenderOnce for EntryButton {
                 },
                 |this| this.w_full().px_4().h_12(),
             )
-            .when(self.selected, |this| this.bg(config.theme.muted))
             .when_some(self.entry.icon(), |this, icon| {
                 this.child(
                     img(ImageSource::Resource(icon.clone()))
@@ -61,30 +59,22 @@ impl RenderOnce for EntryButton {
                         .object_fit(ObjectFit::Contain),
                 )
             })
-            .child(self.entry.name().clone())
-            .when_some(
-                self.selected.then_some(self.entry.description()).flatten(),
-                |this, description| {
-                    this.child(
-                        div()
-                            .flex()
-                            .text_color(config.theme.muted_foreground)
-                            .when(self.selected, |this| this.bg(config.theme.muted))
-                            .text_overflow(TextOverflow::Truncate("...".into()))
-                            .when(!self.favorite, |this| this.child(" — "))
-                            .child(description.clone()),
-                    )
-                },
-            )
-            .on_mouse_move(move |_, _, cx| {
-                if !self.selected {
-                    (self.select)(cx);
-                }
-            })
-            .on_click(move |_, window, cx| {
-                if self.entry.open(cx) {
-                    window.remove_window();
-                }
+            .child(self.entry.text().clone())
+            .when(self.selected, |this| {
+                this.bg(config.theme.muted).when_some(
+                    self.entry.description(),
+                    |this, description| {
+                        this.child(
+                            div()
+                                .flex()
+                                .text_color(config.theme.muted_foreground)
+                                .when(self.selected, |this| this.bg(config.theme.muted))
+                                .text_overflow(TextOverflow::Truncate("...".into()))
+                                .when(!self.favorite, |this| this.child(" — "))
+                                .child(description.clone()),
+                        )
+                    },
+                )
             })
     }
 }

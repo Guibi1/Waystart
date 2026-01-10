@@ -1,7 +1,7 @@
 pub mod client;
 pub mod server;
 
-const SOCKET_PATH: &str = "/tmp/waystart.sock";
+const SOCKET_PATH: &str = "/tmp/waystart-dev.sock";
 
 const MESSAGE_OPEN: &[u8] = b"open";
 const MESSAGE_CLOSE: &[u8] = b"close";
