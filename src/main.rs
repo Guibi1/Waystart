@@ -1,6 +1,7 @@
 use gpui::{
-    App, AppContext, Application, BorrowAppContext, Bounds, Entity, Focusable, TitlebarOptions,
-    WindowBounds, WindowDecorations, WindowHandle, WindowKind, WindowOptions, point, px, size,
+    App, AppContext, Application, BorrowAppContext, Bounds, Entity, Focusable, QuitMode,
+    TitlebarOptions, WindowBounds, WindowDecorations, WindowHandle, WindowKind, WindowOptions,
+    point, px, size,
 };
 
 use crate::config::Config;
@@ -54,7 +55,11 @@ fn main() {
 
     Application::new()
         .with_assets(ui::Assets)
-        .keep_running(daemon)
+        .with_quit_mode(if daemon {
+            QuitMode::Explicit
+        } else {
+            QuitMode::LastWindowClosed
+        })
         .run(move |cx| {
             ui::init(cx);
             cx.set_global(SearchEntries::new());
@@ -111,7 +116,7 @@ pub fn open_window(cx: &mut App, waystart: Entity<Waystart>) -> WindowHandle<Way
             ..Default::default()
         },
         |window, cx| {
-            window.focus(&waystart.focus_handle(cx));
+            window.focus(&waystart.focus_handle(cx), cx);
             waystart
         },
     )

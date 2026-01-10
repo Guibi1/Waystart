@@ -341,7 +341,7 @@ impl<M: ManagedView> Element for Dropdown<M> {
                                         if let Some(previous_focus_handle) =
                                             previously_focused.borrow_mut().take()
                                         {
-                                            window.focus(&previous_focus_handle);
+                                            window.focus(&previous_focus_handle, cx);
                                         }
                                         *content_view.borrow_mut() = None;
                                         window.refresh();
@@ -469,7 +469,7 @@ impl<M: ManagedView> Element for Dropdown<M> {
                                         && let Some(previous_focus_handle) =
                                             previously_focused.borrow_mut().take()
                                     {
-                                        window.focus(&previous_focus_handle);
+                                        window.focus(&previous_focus_handle, cx);
                                     }
                                     *content_view.borrow_mut() = None;
                                     window.refresh();
@@ -477,7 +477,7 @@ impl<M: ManagedView> Element for Dropdown<M> {
                             })
                             .detach();
 
-                        window.focus(&new_content_view.focus_handle(cx));
+                        window.focus(&new_content_view.focus_handle(cx), cx);
                         *content_view.borrow_mut() = Some(new_content_view);
                         window.refresh();
                     }

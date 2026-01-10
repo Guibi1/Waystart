@@ -66,7 +66,7 @@ impl SocketServer {
         let mut lines = reader.lines();
 
         while let Some(Ok(message)) = lines.next().await {
-            if let Err(e) = match message.as_bytes() {
+            match message.as_bytes() {
                 MESSAGE_OPEN => cx.update(|cx| {
                     let mut window = window.borrow_mut();
                     if window.map(|w| w.is_active(cx).is_none()).unwrap_or(true) {
@@ -100,9 +100,6 @@ impl SocketServer {
                     eprintln!("Received unknown IPC message: {}", message);
                     return;
                 }
-            } {
-                eprintln!("Lost reference to app: {}", e);
-                return;
             }
         }
     }

@@ -234,7 +234,7 @@ impl Render for Waystart {
                                     .collect()
                             }),
                         )
-                        .track_scroll(self.list_scroll_handle.clone())
+                        .track_scroll(&self.list_scroll_handle)
                         .flex_grow()
                         .pb_2(),
                     ),

@@ -17,9 +17,6 @@ toml = { version = "0.9.5", features = ["serde"] }
 unicode-segmentation = "1.12.0"
 xflags = "0.3.2"
 
-[patch."https://github.com/zed-industries/zed"]
-gpui = { git = "https://github.com/guibi1/zed.git", branch = "patched" }
-
 [profile.release]
 codegen-units = 1
 lto = "thin"
