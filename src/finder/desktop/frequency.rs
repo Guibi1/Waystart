@@ -1,21 +1,25 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::sync::Mutex;
 use std::time::SystemTime;
 
 use gpui::SharedString;
 use serde::{Deserialize, Serialize};
 
-pub(super) struct Frequencies(HashMap<SharedString, EntryFrequency>);
+pub static DESKTOP_FREQUENCIES: LazyLock<Frequencies> = LazyLock::new(Frequencies::load);
+
+pub struct Frequencies(Mutex<HashMap<SharedString, EntryFrequency>>);
 
 impl Frequencies {
     pub fn load() -> Self {
-        Self(match std::fs::read_to_string(&*FREQUENCIES_SAVE_PATH) {
-            Ok(file) => toml::from_str(&file).expect("Failed to parse frequency history"),
-            Err(_) => HashMap::new(),
-        })
+        Self(Mutex::new(
+            match std::fs::read_to_string(&*FREQUENCIES_SAVE_PATH) {
+                Ok(file) => toml::from_str(&file).expect("Failed to parse frequency history"),
+                Err(_) => HashMap::new(),
+            },
+        ))
     }
 
     pub async fn save(&self) {
@@ -28,19 +32,18 @@ impl Frequencies {
             );
         }
     }
-}
 
-impl Deref for Frequencies {
-    type Target = HashMap<SharedString, EntryFrequency>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn increment_frequency(&self, entry_id: &SharedString) {
+        let mut guard = self.0.lock().unwrap();
+        if let Some(frequency) = guard.get_mut(entry_id) {
+            frequency.increment();
+        } else {
+            guard.insert(entry_id.clone(), EntryFrequency::new());
+        }
     }
-}
 
-impl DerefMut for Frequencies {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn score(&self, id: &SharedString) -> u32 {
+        self.0.lock().unwrap().get(id).map_or(0, |freq| freq.score)
     }
 }
 

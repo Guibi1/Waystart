@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::cmp::Reverse;
 use std::rc::Rc;
 
 use gpui::prelude::FluentBuilder;
@@ -9,7 +10,7 @@ use gpui::{
 };
 
 use crate::config::Config;
-use crate::finder::desktop::SearchEntries;
+use crate::finder::favorites::Favorites;
 use crate::finder::{Entry, EntryExecuteResult, Finder, default_finders};
 use crate::ui::actions::{Close, ExecuteEntry, SelectNextEntry, SelectPrevEntry, ToggleFavorite};
 use crate::ui::elements::{EntryButton, Icon, PowerOptions, Separator, Shortcut, TextInput};
@@ -35,6 +36,7 @@ pub struct Waystart {
     search_bar: Entity<TextInput>,
     selected: usize,
 
+    favorites: Favorites,
     finders: Vec<Box<dyn Finder>>,
     matcher: RefCell<nucleo_matcher::Matcher>,
 }
@@ -48,17 +50,27 @@ impl Waystart {
 
         cx.observe(&search_bar, |this, _, cx| this.filter_results(cx))
             .detach();
-        cx.observe_global::<SearchEntries>(|this, cx| this.filter_results(cx))
-            .detach();
+        cx.on_app_quit(|this, _| {
+            this.favorites.save();
+            async {}
+        })
+        .detach();
+
+        let finders = default_finders();
 
         Self {
             focus_handle,
-            entries: cx.global::<SearchEntries>().default_entries().unwrap(),
+            entries: finders
+                .iter()
+                .filter_map(|finder| finder.default_entries())
+                .flatten()
+                .collect(),
             list_scroll_handle: UniformListScrollHandle::new(),
             search_bar,
             selected: 0,
 
-            finders: default_finders(),
+            favorites: Favorites::load(),
+            finders,
             matcher: RefCell::new(nucleo_matcher::Matcher::default()),
         }
     }
@@ -66,7 +78,6 @@ impl Waystart {
     pub fn reset_search(&mut self, cx: &mut Context<Self>) {
         self.search_bar
             .update(cx, |search_bar, _| search_bar.reset());
-        self.filter_results(cx);
     }
 
     fn filter_results(&mut self, cx: &mut Context<Self>) {
@@ -90,6 +101,7 @@ impl Waystart {
             );
         }
 
+        self.entries.sort_by_key(|entry| Reverse(entry.score()));
         self.selected = 0;
         cx.notify();
     }
@@ -128,12 +140,20 @@ impl Waystart {
             window.remove_window()
         }
     }
+
+    fn toggle_favorite_entry<A>(&mut self, _: &A, _: &mut Window, _: &mut Context<Self>) {
+        let entry = self.entries.get(self.selected).cloned();
+        if let Some(ref entry) = entry
+            && entry.can_favorite()
+        {
+            self.favorites.insert(entry.id().clone());
+        }
+    }
 }
 
 impl Render for Waystart {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let config = cx.global::<Config>();
-        let favorites = cx.global::<SearchEntries>().favorites();
         let is_searching = !self.search_bar.read(cx).content().is_empty();
 
         div()
@@ -153,14 +173,7 @@ impl Render for Waystart {
             .on_action::<SelectPrevEntry>(cx.listener(Self::select_prev_entry))
             .on_action::<SelectNextEntry>(cx.listener(Self::select_next_entry))
             .on_action::<ExecuteEntry>(cx.listener(Self::execute_entry))
-            .on_action::<ToggleFavorite>(cx.listener(move |this, _, _, cx| {
-                let entry = this.entries.get(this.selected).cloned();
-                if let Some(ref entry) = entry
-                    && entry.can_favorite()
-                {
-                    cx.global_mut::<SearchEntries>().add_favorite(entry);
-                }
-            }))
+            .on_action::<ToggleFavorite>(cx.listener(Self::toggle_favorite_entry))
             .child(
                 div()
                     .h_16()
@@ -171,26 +184,28 @@ impl Render for Waystart {
                     .child(self.search_bar.clone()),
             )
             .child(Separator::new())
-            .when(!favorites.is_empty() && !is_searching, |this| {
-                this.child(
-                    div()
-                        .gap_1()
-                        .px_2()
-                        .child(
-                            div()
-                                .px_5()
-                                .py_1()
-                                .text_color(config.theme.muted_foreground)
-                                .child("Favorites"),
-                        )
-                        .child(
-                            div().flex().gap_2().items_center().children(
-                                favorites
-                                    .into_iter()
-                                    .map(|entry| EntryButton::new(entry, false).favorite(true)),
-                            ),
-                        ),
-                )
+            .when(!is_searching, |this| {
+                let mut favorites = self
+                    .favorites
+                    .iter()
+                    .filter_map(|id| self.entries.iter().find(|entry| entry.id() == *id))
+                    .map(|entry| EntryButton::new(entry.clone(), false).favorite(true))
+                    .peekable();
+                this.when(favorites.peek().is_some(), |this| {
+                    this.child(
+                        div()
+                            .gap_1()
+                            .px_2()
+                            .child(
+                                div()
+                                    .px_5()
+                                    .py_1()
+                                    .text_color(config.theme.muted_foreground)
+                                    .child("Favorites"),
+                            )
+                            .child(div().flex().gap_2().items_center().children(favorites)),
+                    )
+                })
             })
             .child(
                 div()

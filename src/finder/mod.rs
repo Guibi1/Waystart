@@ -2,14 +2,15 @@ use std::rc::Rc;
 
 use gpui::{App, Resource, SharedString};
 
-use crate::finder::desktop::SearchEntries;
+use crate::finder::desktop::DesktopFinder;
 use crate::finder::math::MathFinder;
 
 pub mod desktop;
+pub mod favorites;
 pub mod math;
 
 pub fn default_finders() -> Vec<Box<dyn Finder>> {
-    vec![Box::new(SearchEntries::new()), Box::new(MathFinder::new())]
+    vec![Box::new(DesktopFinder::new()), Box::new(MathFinder::new())]
 }
 
 pub trait Finder {
@@ -31,6 +32,9 @@ pub trait Finder {
 pub trait Entry {
     /// Get a unique identifier for this entry.
     fn id(&self) -> SharedString;
+
+    /// Get a unique identifier for this entry.
+    fn score(&self) -> u32;
 
     /// Get the main text of this entry.
     fn text(&self) -> SharedString;

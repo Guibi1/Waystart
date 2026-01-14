@@ -3,16 +3,21 @@ use gpui::{App, Resource, SharedString};
 use crate::finder::{Entry, EntryExecuteResult};
 
 pub struct MathEntry {
-    pub result: SharedString,
+    pub result: evalexpr::Value,
+    pub text: SharedString,
 }
 
 impl Entry for MathEntry {
     fn id(&self) -> SharedString {
-        self.result.clone()
+        self.text.clone()
+    }
+
+    fn score(&self) -> u32 {
+        u32::MAX
     }
 
     fn text(&self) -> SharedString {
-        self.result.clone()
+        self.text.clone()
     }
 
     fn description(&self) -> Option<SharedString> {

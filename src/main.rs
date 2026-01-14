@@ -1,12 +1,10 @@
 use gpui::{
-    App, AppContext, Application, BorrowAppContext, Bounds, Entity, Focusable, QuitMode,
-    TitlebarOptions, WindowBounds, WindowDecorations, WindowHandle, WindowKind, WindowOptions,
-    point, px, size,
+    App, AppContext, Application, Bounds, Entity, Focusable, QuitMode, TitlebarOptions,
+    WindowBounds, WindowDecorations, WindowHandle, WindowKind, WindowOptions, point, px, size,
 };
 
 use crate::config::Config;
-use crate::finder::Finder;
-use crate::finder::desktop::SearchEntries;
+use crate::finder::desktop::frequency::DESKTOP_FREQUENCIES;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
 use crate::ui::Waystart;
@@ -18,41 +16,34 @@ mod ipc;
 mod ui;
 
 fn main() {
-    let daemon = match cli::Waystart::from_env_or_exit().subcommand {
+    let message = match cli::Waystart::from_env_or_exit().subcommand {
+        cli::WaystartCmd::Open(_) => SocketMessage::Open,
+        cli::WaystartCmd::Close(_) => SocketMessage::Close,
+        cli::WaystartCmd::Toggle(_) => SocketMessage::Toggle,
         cli::WaystartCmd::Standalone(_) => {
             if let Ok(client) = SocketClient::try_connect() {
                 client.send_message_socket(SocketMessage::Open);
                 return;
-            }
-            // Start without daemon
-            false
-        }
-        cli::WaystartCmd::Daemon(daemon) => {
-            if daemon.exit {
-                let client = SocketClient::connect();
-                client.send_message_socket(SocketMessage::Quit);
+            } else {
+                create_app(false);
                 return;
             }
-            // Start with daemon
-            true
         }
-        cli::WaystartCmd::Open(_) => {
-            let client = SocketClient::connect();
-            client.send_message_socket(SocketMessage::Open);
-            return;
-        }
-        cli::WaystartCmd::Close(_) => {
-            let client = SocketClient::connect();
-            client.send_message_socket(SocketMessage::Close);
-            return;
-        }
-        cli::WaystartCmd::Toggle(_) => {
-            let client = SocketClient::connect();
-            client.send_message_socket(SocketMessage::Toggle);
-            return;
+        cli::WaystartCmd::Daemon(options) => {
+            if options.exit {
+                SocketMessage::Quit
+            } else {
+                create_app(true);
+                return;
+            }
         }
     };
 
+    let client = SocketClient::connect();
+    client.send_message_socket(message);
+}
+
+fn create_app(daemon: bool) {
     Application::new()
         .with_assets(ui::Assets)
         .with_quit_mode(if daemon {
@@ -62,14 +53,9 @@ fn main() {
         })
         .run(move |cx| {
             ui::init(cx);
-            cx.set_global(SearchEntries::new());
             cx.set_global(Config::load());
 
-            cx.on_app_quit(|cx| {
-                let entries = cx.remove_global::<SearchEntries>();
-                async move { entries.save().await }
-            })
-            .detach();
+            cx.on_app_quit(|_| DESKTOP_FREQUENCIES.save()).detach();
 
             let waystart = cx.new(Waystart::new);
 
@@ -83,7 +69,6 @@ fn main() {
 }
 
 pub fn open_window(cx: &mut App, waystart: Entity<Waystart>) -> WindowHandle<Waystart> {
-    cx.update_global(|entries: &mut SearchEntries, _| entries.sort_by_frequency());
     cx.update_entity(&waystart, |waystart: &mut Waystart, cx| {
         waystart.reset_search(cx)
     });

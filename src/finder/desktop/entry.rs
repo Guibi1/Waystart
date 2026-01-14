@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -7,7 +8,8 @@ use gpui::{App, Resource, SharedString};
 use nucleo_matcher::Utf32String;
 
 use crate::config::Config;
-use crate::finder::desktop::{SearchEntries, create_terminal_command};
+use crate::finder::desktop::create_terminal_command;
+use crate::finder::desktop::frequency::DESKTOP_FREQUENCIES;
 use crate::finder::{Entry, EntryExecuteResult};
 
 pub struct DesktopEntry {
@@ -16,6 +18,7 @@ pub struct DesktopEntry {
     pub description: Option<SharedString>,
     pub icon: Option<Resource>,
     pub haystack: nucleo_matcher::Utf32String,
+    score: Cell<u32>,
     exec: Vec<String>,
     working_dir: Option<PathBuf>,
     open_in_terminal: bool,
@@ -24,6 +27,10 @@ pub struct DesktopEntry {
 impl Entry for DesktopEntry {
     fn id(&self) -> SharedString {
         self.id.clone()
+    }
+
+    fn score(&self) -> u32 {
+        self.score.get()
     }
 
     fn text(&self) -> SharedString {
@@ -43,8 +50,7 @@ impl Entry for DesktopEntry {
     }
 
     fn execute(&self, cx: &mut App) -> EntryExecuteResult {
-        cx.global_mut::<SearchEntries>()
-            .increment_frequency(&self.id);
+        DESKTOP_FREQUENCIES.increment_frequency(&self.id);
 
         let config = cx.global::<Config>();
         let mut cmd = if self.open_in_terminal {
@@ -126,6 +132,7 @@ impl DesktopEntry {
                     icon,
                     haystack,
                     exec,
+                    score: Cell::new(0),
                     working_dir: entry.path().and_then(|entry| entry.parse().ok()),
                     open_in_terminal: entry.terminal(),
                 },
@@ -133,5 +140,9 @@ impl DesktopEntry {
         }
 
         entries.into_values().map(Rc::new).collect()
+    }
+
+    pub fn set_score(&self, score: u32) {
+        self.score.replace(score);
     }
 }

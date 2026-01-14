@@ -7,7 +7,7 @@ use gpui::SharedString;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub(super) struct Favorites {
+pub struct Favorites {
     favorites: HashSet<SharedString>,
 }
 
@@ -21,9 +21,9 @@ impl Favorites {
         }
     }
 
-    pub async fn save(&self) {
-        let content = toml::to_string(&self).expect("Failed to serialize favorites");
-        if let Err(err) = smol::fs::write(&*FAVORITES_SAVE_PATH, content).await {
+    pub fn save(&self) {
+        let content = toml::to_string(self).expect("Failed to serialize favorites");
+        if let Err(err) = std::fs::write(&*FAVORITES_SAVE_PATH, content) {
             eprintln!(
                 "Failed to save favorites at {}: {}",
                 FAVORITES_SAVE_PATH.to_string_lossy(),

@@ -20,11 +20,27 @@ impl Finder for MathFinder {
         _matcher: &mut nucleo_matcher::Matcher,
         search_term: &str,
     ) -> Option<Vec<Rc<dyn Entry>>> {
-        let search_term = search_term.strip_prefix('=')?;
-        let value = evalexpr::eval(search_term).ok()?;
+        if let Some(search_term) = search_term.strip_prefix('=') {
+            return match evalexpr::eval(search_term) {
+                Ok(result) => Some(vec![Rc::new(MathEntry {
+                    text: format!("= {}", result).into(),
+                    result,
+                })]),
+                Err(err) => Some(vec![Rc::new(MathEntry {
+                    text: err.to_string().into(),
+                    result: evalexpr::Value::String(err.to_string()),
+                })]),
+            };
+        }
 
-        Some(vec![Rc::new(MathEntry {
-            result: value.to_string().into(),
-        })])
+        let result = evalexpr::eval(search_term).ok()?;
+        if let evalexpr::Value::Empty = result {
+            None
+        } else {
+            Some(vec![Rc::new(MathEntry {
+                text: format!("= {}", result).into(),
+                result,
+            })])
+        }
     }
 }
