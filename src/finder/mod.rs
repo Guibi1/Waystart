@@ -1,6 +1,8 @@
+use std::cell::RefCell;
+use std::cmp::Reverse;
 use std::rc::Rc;
 
-use gpui::{App, Resource, SharedString};
+use gpui::{App, Global, Resource, SharedString, Window};
 
 use crate::finder::desktop::DesktopFinder;
 use crate::finder::math::MathFinder;
@@ -9,8 +11,42 @@ pub mod desktop;
 pub mod favorites;
 pub mod math;
 
-pub fn default_finders() -> Vec<Box<dyn Finder>> {
-    vec![Box::new(DesktopFinder::new()), Box::new(MathFinder::new())]
+pub struct Finders {
+    finders: Vec<Box<dyn Finder>>,
+    matcher: RefCell<nucleo_matcher::Matcher>,
+}
+
+impl Global for Finders {}
+impl Finders {
+    pub fn new() -> Self {
+        Self {
+            finders: vec![Box::new(DesktopFinder::new()), Box::new(MathFinder::new())],
+            matcher: RefCell::new(nucleo_matcher::Matcher::default()),
+        }
+    }
+
+    pub fn default_entries(&self) -> Vec<Rc<dyn Entry>> {
+        let mut entries = self
+            .finders
+            .iter()
+            .filter_map(|finder| finder.default_entries())
+            .flatten()
+            .collect::<Vec<_>>();
+        entries.sort_by_key(|entry| Reverse(entry.score()));
+        entries
+    }
+
+    pub fn filtered_entries(&self, search_term: &str) -> Vec<Rc<dyn Entry>> {
+        let mut matcher = self.matcher.borrow_mut();
+        let mut entries = self
+            .finders
+            .iter()
+            .filter_map(|finder| finder.filtered_entries(&mut matcher, search_term))
+            .flatten()
+            .collect::<Vec<_>>();
+        entries.sort_by_key(|entry| Reverse(entry.score()));
+        entries
+    }
 }
 
 pub trait Finder {
@@ -49,10 +85,5 @@ pub trait Entry {
     fn can_favorite(&self) -> bool;
 
     /// Execute this entry per user's request.
-    fn execute(&self, cx: &mut App) -> EntryExecuteResult;
-}
-
-pub enum EntryExecuteResult {
-    ExecuteFailed,
-    CloseWindow,
+    fn execute(&self, window: &mut Window, cx: &mut App);
 }

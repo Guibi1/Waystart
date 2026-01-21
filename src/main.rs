@@ -4,7 +4,9 @@ use gpui::{
 };
 
 use crate::config::Config;
+use crate::finder::Finders;
 use crate::finder::desktop::frequency::DESKTOP_FREQUENCIES;
+use crate::finder::favorites::Favorites;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
 use crate::ui::Waystart;
@@ -54,8 +56,15 @@ fn create_app(daemon: bool) {
         .run(move |cx| {
             ui::init(cx);
             cx.set_global(Config::load());
+            cx.set_global(Favorites::load());
+            cx.set_global(Finders::new());
 
             cx.on_app_quit(|_| DESKTOP_FREQUENCIES.save()).detach();
+            cx.on_app_quit(|cx| {
+                let favorites = cx.remove_global::<Favorites>();
+                async move { favorites.save().await }
+            })
+            .detach();
 
             let waystart = cx.new(Waystart::new);
 

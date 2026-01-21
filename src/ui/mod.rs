@@ -5,6 +5,7 @@ use rust_embed::RustEmbed;
 
 mod actions;
 pub mod elements;
+mod pages;
 mod waystart;
 
 pub use waystart::Waystart;

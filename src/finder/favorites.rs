@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
-use gpui::SharedString;
+use gpui::{Global, SharedString};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -21,9 +21,9 @@ impl Favorites {
         }
     }
 
-    pub fn save(&self) {
+    pub async fn save(&self) {
         let content = toml::to_string(self).expect("Failed to serialize favorites");
-        if let Err(err) = std::fs::write(&*FAVORITES_SAVE_PATH, content) {
+        if let Err(err) = smol::fs::write(&*FAVORITES_SAVE_PATH, content).await {
             eprintln!(
                 "Failed to save favorites at {}: {}",
                 FAVORITES_SAVE_PATH.to_string_lossy(),
@@ -46,6 +46,8 @@ impl DerefMut for Favorites {
         &mut self.favorites
     }
 }
+
+impl Global for Favorites {}
 
 static FAVORITES_SAVE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::data_dir()

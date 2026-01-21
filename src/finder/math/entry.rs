@@ -1,6 +1,6 @@
-use gpui::{App, Resource, SharedString};
+use gpui::{App, Resource, SharedString, Window};
 
-use crate::finder::{Entry, EntryExecuteResult};
+use crate::finder::Entry;
 
 pub struct MathEntry {
     pub result: evalexpr::Value,
@@ -32,8 +32,8 @@ impl Entry for MathEntry {
         false
     }
 
-    fn execute(&self, cx: &mut App) -> EntryExecuteResult {
+    fn execute(&self, window: &mut Window, cx: &mut App) {
         cx.write_to_clipboard(self.result.to_string().into());
-        EntryExecuteResult::CloseWindow
+        window.remove_window();
     }
 }

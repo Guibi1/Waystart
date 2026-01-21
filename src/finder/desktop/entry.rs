@@ -4,13 +4,13 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 
-use gpui::{App, Resource, SharedString};
+use gpui::{App, Resource, SharedString, Window};
 use nucleo_matcher::Utf32String;
 
 use crate::config::Config;
+use crate::finder::Entry;
 use crate::finder::desktop::create_terminal_command;
 use crate::finder::desktop::frequency::DESKTOP_FREQUENCIES;
-use crate::finder::{Entry, EntryExecuteResult};
 
 pub struct DesktopEntry {
     pub id: SharedString,
@@ -49,7 +49,7 @@ impl Entry for DesktopEntry {
         true
     }
 
-    fn execute(&self, cx: &mut App) -> EntryExecuteResult {
+    fn execute(&self, window: &mut Window, cx: &mut App) {
         DESKTOP_FREQUENCIES.increment_frequency(&self.id);
 
         let config = cx.global::<Config>();
@@ -58,7 +58,7 @@ impl Entry for DesktopEntry {
         } else {
             let [exec, args @ ..] = self.exec.as_slice() else {
                 eprintln!("Failed to launch {}: Exec command was empty.", self.name);
-                return EntryExecuteResult::ExecuteFailed;
+                return;
             };
 
             let mut cmd = Command::new(exec);
@@ -74,10 +74,9 @@ impl Entry for DesktopEntry {
 
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
         match cmd.spawn() {
-            Ok(_) => EntryExecuteResult::CloseWindow,
+            Ok(_) => window.remove_window(),
             Err(e) => {
                 eprintln!("Failed to launch {}: {}.", self.name, e);
-                EntryExecuteResult::ExecuteFailed
             }
         }
     }
