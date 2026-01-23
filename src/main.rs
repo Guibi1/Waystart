@@ -7,14 +7,17 @@ use crate::config::Config;
 use crate::finder::Finders;
 use crate::finder::desktop::frequency::DESKTOP_FREQUENCIES;
 use crate::finder::favorites::Favorites;
+use crate::finder::wifi::WifiManager;
 use crate::ipc::client::{SocketClient, SocketMessage};
 use crate::ipc::server::SocketServer;
+use crate::quick_access::Quicks;
 use crate::ui::Waystart;
 
 mod cli;
 mod config;
 mod finder;
 mod ipc;
+mod quick_access;
 mod ui;
 
 fn main() {
@@ -58,6 +61,14 @@ fn create_app(daemon: bool) {
             cx.set_global(Config::load());
             cx.set_global(Favorites::load());
             cx.set_global(Finders::new());
+            cx.set_global(Quicks::new());
+
+            cx.spawn(async move |cx| {
+                if let Ok(wifi) = WifiManager::new(cx).await {
+                    cx.update(move |cx| cx.set_global(wifi));
+                }
+            })
+            .detach();
 
             cx.on_app_quit(|_| DESKTOP_FREQUENCIES.save()).detach();
             cx.on_app_quit(|cx| {
@@ -85,18 +96,18 @@ pub fn open_window(cx: &mut App, waystart: Entity<Waystart>) -> WindowHandle<Way
     let bounds = Bounds::centered(None, size(px(800.), px(500.)), cx);
     cx.open_window(
         WindowOptions {
-            #[cfg(target_os = "linux")]
-            kind: WindowKind::LayerShell(gpui::layer_shell::LayerShellOptions {
-                namespace: "waystart".to_string(),
-                anchor: gpui::layer_shell::Anchor::LEFT
-                    | gpui::layer_shell::Anchor::RIGHT
-                    | gpui::layer_shell::Anchor::BOTTOM
-                    | gpui::layer_shell::Anchor::TOP,
-                margin: Some((px(0.), px(0.), px(40.), px(0.))),
-                keyboard_interactivity: gpui::layer_shell::KeyboardInteractivity::Exclusive,
-                ..Default::default()
-            }),
-            #[cfg(not(target_os = "linux"))]
+            // #[cfg(target_os = "linux")]
+            // kind: WindowKind::LayerShell(gpui::layer_shell::LayerShellOptions {
+            //     namespace: "waystart".to_string(),
+            //     anchor: gpui::layer_shell::Anchor::LEFT
+            //         | gpui::layer_shell::Anchor::RIGHT
+            //         | gpui::layer_shell::Anchor::BOTTOM
+            //         | gpui::layer_shell::Anchor::TOP,
+            //     margin: Some((px(0.), px(0.), px(40.), px(0.))),
+            //     keyboard_interactivity: gpui::layer_shell::KeyboardInteractivity::Exclusive,
+            //     ..Default::default()
+            // }),
+            // #[cfg(not(target_os = "linux"))]
             kind: WindowKind::PopUp,
             is_resizable: false,
             is_minimizable: false,

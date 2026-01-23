@@ -5,22 +5,29 @@ use gpui::{
 };
 
 use crate::config::Config;
+use crate::quick_access::QuickAccess;
 use crate::ui::elements::{Dropdown, DropdownContent, Icon};
 
-#[derive(IntoElement)]
-pub struct PowerOptions {}
+#[derive(Clone, IntoElement)]
+pub struct PowerQuickAccess {}
 
-impl PowerOptions {
+impl PowerQuickAccess {
     pub fn new() -> Self {
-        PowerOptions {}
+        PowerQuickAccess {}
     }
 }
 
-impl RenderOnce for PowerOptions {
+impl QuickAccess for PowerQuickAccess {
+    fn any_element(&self) -> gpui::AnyElement {
+        self.clone().into_any_element()
+    }
+}
+
+impl RenderOnce for PowerQuickAccess {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let config = cx.global::<Config>();
 
-        Dropdown::new("power-options")
+        Dropdown::new("quick-power")
             .anchor(Corner::TopRight)
             .trigger(
                 div()
@@ -35,19 +42,16 @@ impl RenderOnce for PowerOptions {
             .content(|cx| {
                 DropdownContent::new(cx)
                     .w_40()
-                    .item(
-                        "power-option-lock",
-                        "Lock",
-                        Some(Icon::Lock),
-                        |window, _| match Command::new("loginctl").arg("lock-session").spawn() {
+                    .item("quick-power-lock", "Lock", Some(Icon::Lock), |window, _| {
+                        match Command::new("loginctl").arg("lock-session").spawn() {
                             Ok(_) => window.remove_window(),
                             Err(e) => {
                                 eprintln!("Failed to lock session: {}", e);
                             }
-                        },
-                    )
+                        }
+                    })
                     .item(
-                        "power-option-sleep",
+                        "quick-power-sleep",
                         "Sleep",
                         Some(Icon::Sleep),
                         |window, _| match Command::new("systemctl").arg("suspend").spawn() {
@@ -58,7 +62,7 @@ impl RenderOnce for PowerOptions {
                         },
                     )
                     .item(
-                        "power-option-shut-down",
+                        "quick-power-shut-down",
                         "Shut down",
                         Some(Icon::Power),
                         |window, _| match Command::new("systemctl").arg("poweroff").spawn() {
@@ -69,7 +73,7 @@ impl RenderOnce for PowerOptions {
                         },
                     )
                     .item(
-                        "power-option-restart",
+                        "quick-power-restart",
                         "Restart",
                         Some(Icon::Restart),
                         |window, _| match Command::new("systemctl").arg("reboot").spawn() {

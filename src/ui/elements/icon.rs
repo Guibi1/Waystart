@@ -7,6 +7,8 @@ pub enum Icon {
     Restart,
     Search,
     Sleep,
+    Wifi,
+    WifiOff,
 }
 
 impl Icon {
@@ -17,6 +19,8 @@ impl Icon {
             Icon::Restart => "restart.svg",
             Icon::Search => "search.svg",
             Icon::Sleep => "sleep.svg",
+            Icon::Wifi => "wifi.svg",
+            Icon::WifiOff => "wifi-off.svg",
         };
 
         IconElement::new(path.into(), color)

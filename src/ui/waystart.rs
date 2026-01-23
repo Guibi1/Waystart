@@ -4,8 +4,9 @@ use gpui::{
 };
 
 use crate::config::Config;
+use crate::quick_access::Quicks;
 use crate::ui::actions::{Close, ExecuteEntry, SelectNext, SelectPrev, ToggleFavorite};
-use crate::ui::elements::{Icon, PowerOptions, Separator, Shortcut, TextInput};
+use crate::ui::elements::{Icon, Separator, Shortcut, TextInput};
 use crate::ui::pages::{HomePage, Page};
 
 const CONTEXT: &str = "Waystart";
@@ -79,6 +80,7 @@ impl Waystart {
 impl Render for Waystart {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let config = cx.global::<Config>();
+        let quicks = cx.global::<Quicks>();
 
         div()
             .size_full()
@@ -117,7 +119,7 @@ impl Render for Waystart {
                     .px_4()
                     .items_center()
                     .gap_2()
-                    .child(PowerOptions::new())
+                    .child(div().flex().gap_2().children(quicks.iter_any_element()))
                     .child(
                         div()
                             .ml_auto()

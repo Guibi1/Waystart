@@ -6,10 +6,12 @@ use gpui::{App, Global, Resource, SharedString, Window};
 
 use crate::finder::desktop::DesktopFinder;
 use crate::finder::math::MathFinder;
+use crate::finder::wifi::WifiFinder;
 
 pub mod desktop;
 pub mod favorites;
 pub mod math;
+pub mod wifi;
 
 pub struct Finders {
     finders: Vec<Box<dyn Finder>>,
@@ -20,7 +22,11 @@ impl Global for Finders {}
 impl Finders {
     pub fn new() -> Self {
         Self {
-            finders: vec![Box::new(DesktopFinder::new()), Box::new(MathFinder::new())],
+            finders: vec![
+                Box::new(DesktopFinder::new()),
+                Box::new(MathFinder::new()),
+                Box::new(WifiFinder::new()),
+            ],
             matcher: RefCell::new(nucleo_matcher::Matcher::default()),
         }
     }

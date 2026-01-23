@@ -4,7 +4,6 @@ pub mod dropdown;
 pub mod entry_button;
 pub mod icon;
 pub mod input;
-pub mod power_options;
 pub mod separator;
 pub mod shortcut;
 
@@ -12,7 +11,6 @@ pub use dropdown::{Dropdown, DropdownContent};
 pub use entry_button::EntryButton;
 pub use icon::Icon;
 pub use input::TextInput;
-pub use power_options::PowerOptions;
 pub use separator::Separator;
 pub use shortcut::Shortcut;
 
